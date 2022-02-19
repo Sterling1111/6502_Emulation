@@ -2,6 +2,7 @@
 #define INC_6502_EMULATION_6502_H
 
 #include <iostream>
+#include <chrono>
 
 /*
  * immediate
@@ -29,6 +30,8 @@ struct m6502::CPU {
 
     byte A, X, Y;   //registers
 
+    dword TCSFrequency;
+
     struct PS {     //processor status
         byte C : 1;  //carry flag
         byte Z : 1;  //zero flag
@@ -44,25 +47,49 @@ struct m6502::CPU {
         byte data[MAX_MEM];
 
         Mem() {initialize();}
-
-        void initialize() {
-            for (dword i{0}; i < MAX_MEM; i++)
-                data[i] = 0;
-        }
-
-        byte operator[](dword address) const {
-            return data[address];
-        }
-
-        byte& operator[](dword address) {
-            return data[address];
-        }
+        void initialize() { for (dword i{0}; i < MAX_MEM; i++) data[i] = 0; }
+        byte operator[](dword address) const { return data[address]; }
+        byte& operator[](dword address) { return data[address]; }
     };
     Mem mem;
 
+    struct Cycles {
+        explicit Cycles(sdword cycles=0, dword TCSFrequency=2800, int Mhz=1) : cycles{cycles} {
+            cycleDuration = TCSFrequency / Mhz;
+            startTimePoint = __builtin_ia32_rdtsc();
+        };
+        Cycles&  operator--(){
+            --cycles;
+            //busy wait. There is no other way.
+            while((__builtin_ia32_rdtsc() - startTimePoint) < cycleDuration);
+            startTimePoint = __builtin_ia32_rdtsc();
+            return *this;
+        }
+        Cycles& operator-=(sdword num) {
+            for (int i = 0; i < num; ++i) {
+                this->operator--();
+            }
+            return *this;
+        }
+        bool operator> (sdword other) const {return cycles > other;}
+
+        static int& calculateFrequency() {
+            static int eax{};
+            __asm__("mov $0x16, %eax\n\t");
+            __asm__("cpuid\n\t");
+            __asm__("mov %%eax, %0\n\t":"=r" (eax));
+            return eax;
+        }
+        sdword getCycles() const {return cycles;}
+    private:
+        sdword cycles;
+        uint64_t startTimePoint;
+        uint64_t cycleDuration;
+    };
+
     struct CyclesDecrementer {
-        sdword& cycles;
-        explicit CyclesDecrementer(sdword& cycles) : cycles{cycles} {};
+        Cycles& cycles;
+        explicit CyclesDecrementer(Cycles& cycles) : cycles{cycles} {};
         ~CyclesDecrementer() { --cycles; }
     };
 
@@ -85,41 +112,47 @@ struct m6502::CPU {
     INS_JSR = 0x20,
     INS_RTS = 0x60;
 
-    CPU(){reset();};
+    CPU() {
+        reset();
+        static int eax{};
+        __asm__("mov $0x16, %eax\n\t");
+        __asm__("cpuid\n\t");
+        __asm__("mov %%eax, %0\n\t":"=r" (eax));
+        TCSFrequency = eax;
+    };
     void reset(word = 0xFFFC);
-    word readWord(word address, sdword& cycles);
-    byte readByte(word address, sdword& cycles);
-    byte fetchByte(sdword& cycles);
-    word fetchWord(sdword& cycles);
-    void writeWord(word data, word address, sdword& cycles);
-    void writeByte(byte data, word address, sdword& cycles);
+    word readWord(word address, Cycles &cycles);
+    byte readByte(word address, Cycles &cycles);
+    byte fetchByte(Cycles &cycles);
+    word fetchWord(Cycles &cycles);
+    void writeWord(word data, word address, Cycles &cycles);
+    void writeByte(byte data, word address, Cycles &cycles);
     void loadRegisterSetStatus(byte Register);
-    dword execute(dword, dword = 1);
+    dword execute(dword cycles, dword instructionsToExecute = 1);
     //read instructions which return the byte in memory at the address for the given addressing mode
-    inline byte readAddrZeroPage(sdword &cycles);
-    inline byte readAddrZeroPageX(sdword &cycles);
-    inline byte readAddrAbsolute(sdword &signedCycles);
-    inline byte readAddrAbsoluteX(sdword &signedCycles);
-    inline byte readAddrAbsoluteY(sdword &signedCycles);
-    inline byte readAddrZeroPageY(sdword &signedCycles);
-    inline byte readAddrXIndirect(sdword &signedCycles);
-    inline byte readAddrIndirectY(sdword &cycles);
+    inline byte readAddrZeroPage(Cycles &cycles);
+    inline byte readAddrZeroPageX(Cycles &cycles);
+    inline byte readAddrAbsolute(Cycles &cycles);
+    inline byte readAddrAbsoluteX(Cycles &cycles);
+    inline byte readAddrAbsoluteY(Cycles &cycles);
+    inline byte readAddrZeroPageY(Cycles &cycles);
+    inline byte readAddrXIndirect(Cycles &cycles);
+    inline byte readAddrIndirectY(Cycles &cycles);
 
     //write instructions which return the address in memory to write to for a given addressing mode.
-    inline byte writeAddrZeroPage(sdword &cycles);
-    inline byte writeAddrZeroPageX(sdword &cycles);
-    inline byte writeAddrZeroPageY(sdword &cycles);
-    inline word writeAddrAbsolute(sdword &cycles);
-    inline word writeAddrAbsoluteX(sdword&);
-    inline word writeAddrAbsoluteY(sdword &cycles);
-    inline word writeAddrXIndirect(sdword &cycles);
-    inline word writeAddrIndirectY(sdword &cycles);
+    inline byte writeAddrZeroPage(Cycles &cycles);
+    inline byte writeAddrZeroPageX(Cycles &cycles);
+    inline byte writeAddrZeroPageY(Cycles &cycles);
+    inline word writeAddrAbsolute(Cycles &cycles);
+    inline word writeAddrAbsoluteX(Cycles &cycles);
+    inline word writeAddrAbsoluteY(Cycles &cycles);
+    inline word writeAddrXIndirect(Cycles &cycles);
+    inline word writeAddrIndirectY(Cycles &cycles);
 
-    void pushByteToStack(byte, sdword&);
-    void pushWordToStack(word, sdword&);
-    word SPToAddress(bool=false);
-    byte pullByteFromStack(sdword&, bool= false, bool= false);
+    void pushByteToStack(byte data, Cycles &cycles);
+    void pushWordToStack(word data, Cycles &cycles);
+    word SPToAddress(bool incrementSP=false);
+    byte pullByteFromStack(Cycles &cycles, bool incSPBefore = false, bool incSPAfter = false);
 };
 
 #endif //INC_6502_EMULATION_6502_H
-
