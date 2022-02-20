@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <chrono>
+#include <bitset>
 
 /*
  * immediate
@@ -27,21 +28,15 @@ namespace m6502 {
 struct m6502::CPU {
     word PC;    //program counter
     byte SP;    //stack pointer
-
     byte A, X, Y;   //registers
 
-    dword TCSFrequency;
+    dword cycleDuration;
 
-    struct PS {     //processor status
-        byte C : 1;  //carry flag
-        byte Z : 1;  //zero flag
-        byte I : 1;  //interrupt disable
-        byte D : 1;  //decimal mode
-        byte B : 1;  //break command
-        byte V : 1;  //overflow flag
-        byte N : 1;  //negative flag
-    };
-    PS ps;
+    /*carry, zero, interrupt disable, decimal mode, break command,
+     * unused-always 1, overflow, negative*/
+    enum StatusFlags {C, Z, I, D, B, U, V, N, numFlags};
+    std::bitset<StatusFlags::numFlags> PS;
+
     struct Mem {
         static constexpr dword MAX_MEM = 1024 * 64;
         byte data[MAX_MEM];
@@ -54,8 +49,8 @@ struct m6502::CPU {
     Mem mem;
 
     struct Cycles {
-        explicit Cycles(sdword cycles=0, dword TCSFrequency=2800, int Mhz=1) : cycles{cycles} {
-            cycleDuration = TCSFrequency / Mhz;
+        explicit Cycles(sdword cycles, dword cycleDuration) : cycles{cycles} {
+            this->cycleDuration = cycleDuration;
             startTimePoint = __builtin_ia32_rdtsc();
         };
         Cycles&  operator--(){
@@ -72,14 +67,6 @@ struct m6502::CPU {
             return *this;
         }
         bool operator> (sdword other) const {return cycles > other;}
-
-        static int& calculateFrequency() {
-            static int eax{};
-            __asm__("mov $0x16, %eax\n\t");
-            __asm__("cpuid\n\t");
-            __asm__("mov %%eax, %0\n\t":"=r" (eax));
-            return eax;
-        }
         sdword getCycles() const {return cycles;}
     private:
         sdword cycles;
@@ -112,14 +99,12 @@ struct m6502::CPU {
     INS_JSR = 0x20,
     INS_RTS = 0x60;
 
-    CPU() {
+    explicit CPU(double Mhz = 1) {
         reset();
-        static int eax{};
-        __asm__("mov $0x16, %eax\n\t");
-        __asm__("cpuid\n\t");
-        __asm__("mov %%eax, %0\n\t":"=r" (eax));
-        TCSFrequency = eax;
+        dword TCSFrequency = getTCSFrequency();
+        cycleDuration = TCSFrequency / Mhz;
     };
+    static dword getTCSFrequency();
     void reset(word = 0xFFFC);
     word readWord(word address, Cycles &cycles);
     byte readByte(word address, Cycles &cycles);

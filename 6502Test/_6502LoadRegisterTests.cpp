@@ -20,12 +20,12 @@ public:
     void TestLoadRegisterAbsoluteYWhenPageBounderyCrossed(byte, byte CPU::*);
 };
 
-static void VerifyUnmodifiedCPUFlagsFromLoadRegister(const CPU::PS& ps, const CPU::PS& psCopy) {
-    EXPECT_EQ(ps.C, psCopy.C);
-    EXPECT_EQ(ps.I, psCopy.I);
-    EXPECT_EQ(ps.D, psCopy.D);
-    EXPECT_EQ(ps.B, psCopy.B);
-    EXPECT_EQ(ps.V, psCopy.V);
+static void VerifyUnmodifiedCPUFlagsFromLoadRegister(const std::bitset<CPU::StatusFlags::numFlags>& ps, const std::bitset<CPU::StatusFlags::numFlags>& psCopy) {
+    EXPECT_EQ(ps.test(CPU::StatusFlags::C), psCopy.test(CPU::StatusFlags::C));
+    EXPECT_EQ(ps.test(CPU::StatusFlags::I), psCopy.test(CPU::StatusFlags::I));
+    EXPECT_EQ(ps.test(CPU::StatusFlags::D), psCopy.test(CPU::StatusFlags::D));
+    EXPECT_EQ(ps.test(CPU::StatusFlags::B), psCopy.test(CPU::StatusFlags::B));
+    EXPECT_EQ(ps.test(CPU::StatusFlags::V), psCopy.test(CPU::StatusFlags::V));
 }
 
 TEST_F(_6502LoadRegisterTests, CPUTerminatesIfInstructionInvalid) {
@@ -36,175 +36,194 @@ TEST_F(_6502LoadRegisterTests, CPUTerminatesIfInstructionInvalid) {
     EXPECT_EQ(cyclesUsed, EXPECTED_CYCLES);
 }
 
-TEST_F(_6502LoadRegisterTests, CPUCanCompleteNextInstructionIfInsufficientCyclesGiven) {
+TEST_F(_6502LoadRegisterTests, CPUCanCompleteCurrentInstructionIfInsufficientCyclesGiven) {
     cpu.mem[0xFFFC] = CPU::INS_LDA_IM;
     cpu.mem[0xFFFD] = 0x84;
-    dword cyclesUsed = cpu.execute(1);
-    EXPECT_EQ(cyclesUsed, 2);
+    constexpr dword EXPECTED_CYCLES = 2;
+    constexpr dword GIVEN_CYCLES = 2;
+    dword cyclesUsed = cpu.execute(GIVEN_CYCLES);
+    EXPECT_EQ(cyclesUsed, EXPECTED_CYCLES);
 }
 
 TEST_F(_6502LoadRegisterTests, CPUDoesNothingWhenWeExecuteZeroCycles) {
-    CPU cpuCopy = cpu;
-    dword cyclesUsed = cpu.execute(0);
-    EXPECT_EQ(cyclesUsed, 0);
+    constexpr dword EXPECTED_CYCLES = 0;
+    dword cyclesUsed = cpu.execute(EXPECTED_CYCLES);
+    EXPECT_EQ(cyclesUsed, EXPECTED_CYCLES);
 }
 
 TEST_F(_6502LoadRegisterTests, LDAImmediateCanAffectTheZeroFlag) {
-    cpu.ps.Z = false;
+    cpu.PS.set(CPU::StatusFlags::Z, false);
     cpu.mem[0xFFFC] = CPU::INS_LDA_IM;
     cpu.mem[0xFFFD] = 0x00;
-    CPU::PS psCopy = cpu.ps;
-    dword cyclesUsed = cpu.execute(2);
+    auto psCopy = cpu.PS;
+    constexpr dword EXPECTED_CYCLES = 2;
+    dword cyclesUsed = cpu.execute(EXPECTED_CYCLES);
 
-    EXPECT_EQ(cyclesUsed, 2);
-    EXPECT_EQ(cpu.ps.Z, 0x01);
-    VerifyUnmodifiedCPUFlagsFromLoadRegister(cpu.ps, psCopy);
+    EXPECT_EQ(cyclesUsed, EXPECTED_CYCLES);
+    EXPECT_EQ(cpu.PS.test(CPU::StatusFlags::Z), true);
+    VerifyUnmodifiedCPUFlagsFromLoadRegister(cpu.PS, psCopy);
 }
 
 void _6502LoadRegisterTests::TestLoadRegisterImmediate(byte opcode, byte CPU::* Register) {
-    cpu.ps.Z = true;
-    cpu.ps.N = false;
+    cpu.PS.set(CPU::StatusFlags::Z, true);
+    cpu.PS.set(CPU::StatusFlags::N, false);
     cpu.mem[0xFFFC] = opcode;
     cpu.mem[0xFFFD] = 0x84;
-    CPU::PS psCopy = cpu.ps;
-    dword cyclesUsed = cpu.execute(2);
+    auto psCopy = cpu.PS;
+    constexpr dword EXPECTED_CYCLES = 2;
+    dword cyclesUsed = cpu.execute(EXPECTED_CYCLES);
 
-    EXPECT_EQ(cyclesUsed, 2);
+    EXPECT_EQ(cyclesUsed, EXPECTED_CYCLES);
     EXPECT_EQ(cpu.*Register, 0x84);
-    EXPECT_FALSE(cpu.ps.Z);
-    EXPECT_TRUE(cpu.ps.N);
-    VerifyUnmodifiedCPUFlagsFromLoadRegister(cpu.ps, psCopy);
+    EXPECT_FALSE(cpu.PS.test(CPU::StatusFlags::Z));
+    EXPECT_TRUE(cpu.PS.test(CPU::StatusFlags::N));
+    VerifyUnmodifiedCPUFlagsFromLoadRegister(cpu.PS, psCopy);
 }
 
 void _6502LoadRegisterTests::TestLoadRegisterZeroPage(byte opcode, byte CPU::* Register) {
-    cpu.ps.Z = cpu.ps.N = true;
+    cpu.PS.set(CPU::StatusFlags::Z, true);
     cpu.mem[0xFFFC] = opcode;
     cpu.mem[0xFFFD] = 0x42;
     cpu.mem[0x0042] = 0x37;
-    CPU::PS psCopy = cpu.ps;
-    dword cyclesUsed = cpu.execute(3);
+    auto psCopy = cpu.PS;
+    constexpr dword EXPECTED_CYCLES = 3;
+    dword cyclesUsed = cpu.execute(EXPECTED_CYCLES);
 
-    EXPECT_EQ(cyclesUsed, 3);
+    EXPECT_EQ(cyclesUsed, EXPECTED_CYCLES);
     EXPECT_EQ(cpu.*Register, 0x37);
-    EXPECT_FALSE(cpu.ps.Z);
-    EXPECT_FALSE(cpu.ps.N);
-    VerifyUnmodifiedCPUFlagsFromLoadRegister(cpu.ps, psCopy);
+    EXPECT_FALSE(cpu.PS.test(CPU::StatusFlags::Z));
+    EXPECT_FALSE(cpu.PS.test(CPU::StatusFlags::N));
+    VerifyUnmodifiedCPUFlagsFromLoadRegister(cpu.PS, psCopy);
 }
 
 void _6502LoadRegisterTests::TestLoadRegisterZeroPageX(byte opcode, byte CPU::* Register) {
-    cpu.ps.Z = cpu.ps.N = true;
+    cpu.PS.set(CPU::StatusFlags::Z, true);
+    cpu.PS.set(CPU::StatusFlags::N, true);
     cpu.X = 5;
     cpu.mem[0xFFFC] = opcode;
     cpu.mem[0xFFFD] = 0x42;
     cpu.mem[0x0047] = 0x37;
-    CPU::PS psCopy = cpu.ps;
-    dword cyclesUsed = cpu.execute(4);
+    auto psCopy = cpu.PS;
+    constexpr dword EXPECTED_CYCLES = 4;
+    dword cyclesUsed = cpu.execute(EXPECTED_CYCLES);
 
-    EXPECT_EQ(cyclesUsed, 4);
+    EXPECT_EQ(cyclesUsed, EXPECTED_CYCLES);
     EXPECT_EQ(cpu.*Register, 0x37);
-    EXPECT_FALSE(cpu.ps.Z);
-    EXPECT_FALSE(cpu.ps.N);
-    VerifyUnmodifiedCPUFlagsFromLoadRegister(cpu.ps, psCopy);
+    EXPECT_FALSE(cpu.PS.test(CPU::StatusFlags::Z));
+    EXPECT_FALSE(cpu.PS.test(CPU::StatusFlags::N));
+    VerifyUnmodifiedCPUFlagsFromLoadRegister(cpu.PS, psCopy);
 }
 
 void _6502LoadRegisterTests::TestLoadRegisterZeroPageXWhenItRaps(byte opcode, byte CPU::* Register) {
-    cpu.ps.Z = cpu.ps.N = true;
+    cpu.PS.set(CPU::StatusFlags::Z, true);
+    cpu.PS.set(CPU::StatusFlags::N, true);
     cpu.X = 0xFF;
     cpu.mem[0xFFFC] = opcode;
     cpu.mem[0xFFFD] = 0x80;
     cpu.mem[0x007F] = 0x37;
-    CPU::PS psCopy = cpu.ps;
-    dword cyclesUsed = cpu.execute(4);
+    auto psCopy = cpu.PS;
+    constexpr dword EXPECTED_CYCLES = 4;
+    dword cyclesUsed = cpu.execute(EXPECTED_CYCLES);
 
-    EXPECT_EQ(cyclesUsed, 4);
+    EXPECT_EQ(cyclesUsed, EXPECTED_CYCLES);
     EXPECT_EQ(cpu.*Register, 0x37);
-    EXPECT_FALSE(cpu.ps.Z);
-    EXPECT_FALSE(cpu.ps.N);
-    VerifyUnmodifiedCPUFlagsFromLoadRegister(cpu.ps, psCopy);
+    EXPECT_FALSE(cpu.PS.test(CPU::StatusFlags::Z));
+    EXPECT_FALSE(cpu.PS.test(CPU::StatusFlags::N));
+    VerifyUnmodifiedCPUFlagsFromLoadRegister(cpu.PS, psCopy);
 }
 
 void _6502LoadRegisterTests::TestLoadRegisterAbsolute(byte opcode, byte CPU::* Register) {
-    cpu.ps.Z = cpu.ps.N = true;
+    cpu.PS.set(CPU::StatusFlags::Z, true);
+    cpu.PS.set(CPU::StatusFlags::N, true);
     cpu.mem[0xFFFC] = opcode;
     cpu.mem[0xFFFD] = 0x80;
     cpu.mem[0xFFFE] = 0x44;
     cpu.mem[0x4480] = 0x37;
-    CPU::PS psCopy = cpu.ps;
-    dword cyclesUsed = cpu.execute(4);
+    auto psCopy = cpu.PS;
+    constexpr dword EXPECTED_CYCLES = 4;
+    dword cyclesUsed = cpu.execute(EXPECTED_CYCLES);
 
-    EXPECT_EQ(cyclesUsed, 4);
+    EXPECT_EQ(cyclesUsed, EXPECTED_CYCLES);
     EXPECT_EQ(cpu.*Register, 0x37);
-    EXPECT_FALSE(cpu.ps.Z);
-    EXPECT_FALSE(cpu.ps.N);
-    VerifyUnmodifiedCPUFlagsFromLoadRegister(cpu.ps, psCopy);
+    EXPECT_FALSE(cpu.PS.test(CPU::StatusFlags::Z));
+    EXPECT_FALSE(cpu.PS.test(CPU::StatusFlags::N));
+    VerifyUnmodifiedCPUFlagsFromLoadRegister(cpu.PS, psCopy);
 }
 
 void _6502LoadRegisterTests::TestLoadRegisterAbsoluteX(byte opcode, byte CPU::* Register) {
-    cpu.ps.Z = cpu.ps.N = true;
+    cpu.PS.set(CPU::StatusFlags::Z, true);
+    cpu.PS.set(CPU::StatusFlags::N, true);
     cpu.X = 1;
     cpu.mem[0xFFFC] = opcode;
     cpu.mem[0xFFFD] = 0x80;
     cpu.mem[0xFFFE] = 0x44;
     cpu.mem[0x4481] = 0x37;
-    CPU::PS psCopy = cpu.ps;
-    dword cyclesUsed = cpu.execute(4);
+    auto psCopy = cpu.PS;
+    constexpr dword EXPECTED_CYCLES = 4;
+    dword cyclesUsed = cpu.execute(EXPECTED_CYCLES);
 
-    EXPECT_EQ(cyclesUsed, 4);
+    EXPECT_EQ(cyclesUsed, EXPECTED_CYCLES);
     EXPECT_EQ(cpu.*Register, 0x37);
-    EXPECT_FALSE(cpu.ps.Z);
-    EXPECT_FALSE(cpu.ps.N);
-    VerifyUnmodifiedCPUFlagsFromLoadRegister(cpu.ps, psCopy);
+    EXPECT_FALSE(cpu.PS.test(CPU::StatusFlags::Z));
+    EXPECT_FALSE(cpu.PS.test(CPU::StatusFlags::N));
+    VerifyUnmodifiedCPUFlagsFromLoadRegister(cpu.PS, psCopy);
 }
 
 void _6502LoadRegisterTests::TestLoadRegisterAbsoluteXWhenPageBounderyCrossed(byte opcode, byte CPU::* Register) {
-    cpu.ps.Z = cpu.ps.N = true;
+    cpu.PS.set(CPU::StatusFlags::Z, true);
+    cpu.PS.set(CPU::StatusFlags::N, true);
     cpu.X = 0xFF;
     cpu.mem[0xFFFC] = opcode;
     cpu.mem[0xFFFD] = 0x02;
     cpu.mem[0xFFFE] = 0x44;
     cpu.mem[0x4401] = 0x37;
-    CPU::PS psCopy = cpu.ps;
-    dword cyclesUsed = cpu.execute(5);
+    auto psCopy = cpu.PS;
+    constexpr dword EXPECTED_CYCLES = 5;
+    dword cyclesUsed = cpu.execute(EXPECTED_CYCLES);
 
-    EXPECT_EQ(cyclesUsed, 5);
+    EXPECT_EQ(cyclesUsed, EXPECTED_CYCLES);
     EXPECT_EQ(cpu.*Register, 0x37);
-    EXPECT_FALSE(cpu.ps.Z);
-    EXPECT_FALSE(cpu.ps.N);
-    VerifyUnmodifiedCPUFlagsFromLoadRegister(cpu.ps, psCopy);
+    EXPECT_FALSE(cpu.PS.test(CPU::StatusFlags::Z));
+    EXPECT_FALSE(cpu.PS.test(CPU::StatusFlags::N));
+    VerifyUnmodifiedCPUFlagsFromLoadRegister(cpu.PS, psCopy);
 }
 
 void _6502LoadRegisterTests::TestLoadRegisterAbsoluteY(byte opcode, byte CPU::* Register) {
-    cpu.ps.Z = cpu.ps.N = true;
+    cpu.PS.set(CPU::StatusFlags::Z, true);
+    cpu.PS.set(CPU::StatusFlags::N, true);
     cpu.Y = 1;
     cpu.mem[0xFFFC] = opcode;
     cpu.mem[0xFFFD] = 0x80;
     cpu.mem[0xFFFE] = 0x44;
     cpu.mem[0x4481] = 0x37;
-    CPU::PS psCopy = cpu.ps;
-    dword cyclesUsed = cpu.execute(4);
+    auto psCopy = cpu.PS;
+    constexpr dword EXPECTED_CYCLES = 4;
+    dword cyclesUsed = cpu.execute(EXPECTED_CYCLES);
 
-    EXPECT_EQ(cyclesUsed, 4);
+    EXPECT_EQ(cyclesUsed, EXPECTED_CYCLES);
     EXPECT_EQ(cpu.*Register, 0x37);
-    EXPECT_FALSE(cpu.ps.Z);
-    EXPECT_FALSE(cpu.ps.N);
-    VerifyUnmodifiedCPUFlagsFromLoadRegister(cpu.ps, psCopy);
+    EXPECT_FALSE(cpu.PS.test(CPU::StatusFlags::Z));
+    EXPECT_FALSE(cpu.PS.test(CPU::StatusFlags::N));
+    VerifyUnmodifiedCPUFlagsFromLoadRegister(cpu.PS, psCopy);
 }
 
 void _6502LoadRegisterTests::TestLoadRegisterAbsoluteYWhenPageBounderyCrossed(byte opcode, byte CPU::* Register) {
-    cpu.ps.Z = cpu.ps.N = true;
+    cpu.PS.set(CPU::StatusFlags::Z, true);
+    cpu.PS.set(CPU::StatusFlags::N, true);
     cpu.Y = 0xFF;
     cpu.mem[0xFFFC] = opcode;
     cpu.mem[0xFFFD] = 0x02;
     cpu.mem[0xFFFE] = 0x44;
     cpu.mem[0x4401] = 0x37;
-    CPU::PS psCopy = cpu.ps;
-    dword cyclesUsed = cpu.execute(5);
+    auto psCopy = cpu.PS;
+    constexpr dword EXPECTED_CYCLES = 5;
+    dword cyclesUsed = cpu.execute(EXPECTED_CYCLES);
 
-    EXPECT_EQ(cyclesUsed, 5);
+    EXPECT_EQ(cyclesUsed, EXPECTED_CYCLES);
     EXPECT_EQ(cpu.*Register, 0x37);
-    EXPECT_FALSE(cpu.ps.Z);
-    EXPECT_FALSE(cpu.ps.N);
-    VerifyUnmodifiedCPUFlagsFromLoadRegister(cpu.ps, psCopy);
+    EXPECT_FALSE(cpu.PS.test(CPU::StatusFlags::Z));
+    EXPECT_FALSE(cpu.PS.test(CPU::StatusFlags::N));
+    VerifyUnmodifiedCPUFlagsFromLoadRegister(cpu.PS, psCopy);
 }
 
 TEST_F(_6502LoadRegisterTests, LDAImmediateCanLoadAValueIntoTheARegister) {
@@ -248,35 +267,39 @@ TEST_F(_6502LoadRegisterTests, LDYZeroPageXCanLoadAValueIntoTheYRegisterWhenItRa
 }
 
 TEST_F(_6502LoadRegisterTests, LDXZeroPageYCanLoadAValueIntoTheXRegister) {
-    cpu.ps.Z = cpu.ps.N = true;
+    cpu.PS.set(CPU::StatusFlags::Z, true);
+    cpu.PS.set(CPU::StatusFlags::N, true);
     cpu.Y = 5;
     cpu.mem[0xFFFC] = CPU::INS_LDX_ZPY;
     cpu.mem[0xFFFD] = 0x42;
     cpu.mem[0x0047] = 0x37;
-    CPU::PS psCopy = cpu.ps;
-    dword cyclesUsed = cpu.execute(4);
+    auto psCopy = cpu.PS;
+    constexpr dword EXPECTED_CYCLES = 4;
+    dword cyclesUsed = cpu.execute(EXPECTED_CYCLES);
 
-    EXPECT_EQ(cyclesUsed, 4);
+    EXPECT_EQ(cyclesUsed, EXPECTED_CYCLES);
     EXPECT_EQ(cpu.X, 0x37);
-    EXPECT_FALSE(cpu.ps.Z);
-    EXPECT_FALSE(cpu.ps.N);
-    VerifyUnmodifiedCPUFlagsFromLoadRegister(cpu.ps, psCopy);
+    EXPECT_FALSE(cpu.PS.test(CPU::StatusFlags::Z));
+    EXPECT_FALSE(cpu.PS.test(CPU::StatusFlags::N));
+    VerifyUnmodifiedCPUFlagsFromLoadRegister(cpu.PS, psCopy);
 }
 
 TEST_F(_6502LoadRegisterTests, LDXZeroPageYCanLoadAValueIntoTheXRegisterWhenItRaps) {
-    cpu.ps.Z = cpu.ps.N = true;
+    cpu.PS.set(CPU::StatusFlags::Z, true);
+    cpu.PS.set(CPU::StatusFlags::N, true);
     cpu.Y = 0xFF;
     cpu.mem[0xFFFC] = CPU::INS_LDX_ZPY;
     cpu.mem[0xFFFD] = 0x80;
     cpu.mem[0x007F] = 0x37;
-    CPU::PS psCopy = cpu.ps;
-    dword cyclesUsed = cpu.execute(4);
+    auto psCopy = cpu.PS;
+    constexpr dword EXPECTED_CYCLES = 4;
+    dword cyclesUsed = cpu.execute(EXPECTED_CYCLES);
 
-    EXPECT_EQ(cyclesUsed, 4);
+    EXPECT_EQ(cyclesUsed, EXPECTED_CYCLES);
     EXPECT_EQ(cpu.X, 0x37);
-    EXPECT_FALSE(cpu.ps.Z);
-    EXPECT_FALSE(cpu.ps.N);
-    VerifyUnmodifiedCPUFlagsFromLoadRegister(cpu.ps, psCopy);
+    EXPECT_FALSE(cpu.PS.test(CPU::StatusFlags::Z));
+    EXPECT_FALSE(cpu.PS.test(CPU::StatusFlags::N));
+    VerifyUnmodifiedCPUFlagsFromLoadRegister(cpu.PS, psCopy);
 }
 
 TEST_F(_6502LoadRegisterTests, LDAAbsoluteCanLoadAValueIntoTheARegister) {
@@ -324,74 +347,82 @@ TEST_F(_6502LoadRegisterTests, LDXAbsoluteYCanLoadAValueIntoTheXRegisterWhenItRa
 }
 
 TEST_F(_6502LoadRegisterTests, LDAXIndirectCanLoadAValueIntoTheARegister) {
-    cpu.ps.Z = cpu.ps.N = true;
+    cpu.PS.set(CPU::StatusFlags::Z, true);
+    cpu.PS.set(CPU::StatusFlags::N, true);
     cpu.X = 0x04;
     cpu.mem[0xFFFC] = CPU::INS_LDA_XIND;
     cpu.mem[0xFFFD] = 0x02;
     cpu.mem[0x0006] = 0x00;
     cpu.mem[0x0007] = 0x80;
     cpu.mem[0x8000] = 0x37;
-    CPU::PS psCopy = cpu.ps;
-    dword cyclesUsed = cpu.execute(6);
+    auto psCopy = cpu.PS;
+    constexpr dword EXPECTED_CYCLES = 6;
+    dword cyclesUsed = cpu.execute(EXPECTED_CYCLES);
 
-    EXPECT_EQ(cyclesUsed, 6);
+    EXPECT_EQ(cyclesUsed, EXPECTED_CYCLES);
     EXPECT_EQ(cpu.A, 0x37);
-    EXPECT_FALSE(cpu.ps.Z);
-    EXPECT_FALSE(cpu.ps.N);
-    VerifyUnmodifiedCPUFlagsFromLoadRegister(cpu.ps, psCopy);
+    EXPECT_FALSE(cpu.PS.test(CPU::StatusFlags::Z));
+    EXPECT_FALSE(cpu.PS.test(CPU::StatusFlags::N));
+    VerifyUnmodifiedCPUFlagsFromLoadRegister(cpu.PS, psCopy);
 }
 
 TEST_F(_6502LoadRegisterTests, LDAXIndirectCanLoadAValueIntoTheARegisterWhenItRaps) {
-    cpu.ps.Z = cpu.ps.N = true;
+    cpu.PS.set(CPU::StatusFlags::Z, true);
+    cpu.PS.set(CPU::StatusFlags::N, true);
     cpu.X = 0xFF;
     cpu.mem[0xFFFC] = CPU::INS_LDA_XIND;
     cpu.mem[0xFFFD] = 0x00;
     cpu.mem[0x00FF] = 0x00;
     cpu.mem[0x0000] = 0x80;
     cpu.mem[0x8000] = 0x37;
-    CPU::PS psCopy = cpu.ps;
-    dword cyclesUsed = cpu.execute(6);
+    auto psCopy = cpu.PS;
+    constexpr dword EXPECTED_CYCLES = 6;
+    dword cyclesUsed = cpu.execute(EXPECTED_CYCLES);
 
-    EXPECT_EQ(cyclesUsed, 6);
+    EXPECT_EQ(cyclesUsed, EXPECTED_CYCLES);
     EXPECT_EQ(cpu.A, 0x37);
-    EXPECT_FALSE(cpu.ps.Z);
-    EXPECT_FALSE(cpu.ps.N);
-    VerifyUnmodifiedCPUFlagsFromLoadRegister(cpu.ps, psCopy);
+    EXPECT_FALSE(cpu.PS.test(CPU::StatusFlags::Z));
+    EXPECT_FALSE(cpu.PS.test(CPU::StatusFlags::N));
+    VerifyUnmodifiedCPUFlagsFromLoadRegister(cpu.PS, psCopy);
 }
 
 TEST_F(_6502LoadRegisterTests, LDAIndirectYCanLoadAValueIntoTheARegister) {
-    cpu.ps.Z = cpu.ps.N = true;
+    cpu.PS.set(CPU::StatusFlags::Z, true);
+    cpu.PS.set(CPU::StatusFlags::N, true);
     cpu.Y = 0x04;
     cpu.mem[0xFFFC] = CPU::INS_LDA_INDY;
     cpu.mem[0xFFFD] = 0x02;
     cpu.mem[0x0002] = 0x00;
     cpu.mem[0x0003] = 0x80;
     cpu.mem[0x8004] = 0x37;
-    CPU::PS psCopy = cpu.ps;
-    dword cyclesUsed = cpu.execute(5);
+    auto psCopy = cpu.PS;
+    constexpr dword EXPECTED_CYCLES = 5;
+    dword cyclesUsed = cpu.execute(EXPECTED_CYCLES);
 
-    EXPECT_EQ(cyclesUsed, 5);
+    EXPECT_EQ(cyclesUsed, EXPECTED_CYCLES);
     EXPECT_EQ(cpu.A, 0x37);
-    EXPECT_FALSE(cpu.ps.Z);
-    EXPECT_FALSE(cpu.ps.N);
-    VerifyUnmodifiedCPUFlagsFromLoadRegister(cpu.ps, psCopy);
+    EXPECT_FALSE(cpu.PS.test(CPU::StatusFlags::Z));
+    EXPECT_FALSE(cpu.PS.test(CPU::StatusFlags::N));
+    VerifyUnmodifiedCPUFlagsFromLoadRegister(cpu.PS, psCopy);
 }
 
 TEST_F(_6502LoadRegisterTests, LDAIndirectYCanLoadAValueIntoTheARegisterWhenZeroPageCrossed) {
-    cpu.ps.Z = cpu.ps.N = true;
+    cpu.PS.set(CPU::StatusFlags::Z, true);
+    cpu.PS.set(CPU::StatusFlags::N, true);
     cpu.Y = 0xFF;
     cpu.mem[0xFFFC] = CPU::INS_LDA_INDY;
     cpu.mem[0xFFFD] = 0x02;
     cpu.mem[0x0002] = 0x02;
     cpu.mem[0x0003] = 0x80;
     cpu.mem[0x8101] = 0x37; //0x8002 + 0xFF
-    CPU::PS psCopy = cpu.ps;
-    dword cyclesUsed = cpu.execute(6);
+    auto psCopy = cpu.PS;
+    constexpr dword EXPECTED_CYCLES = 6;
+    dword cyclesUsed = cpu.execute(EXPECTED_CYCLES);
 
-    EXPECT_EQ(cyclesUsed, 6);
+    EXPECT_EQ(cyclesUsed, EXPECTED_CYCLES);
     EXPECT_EQ(cpu.A, 0x37);
-    EXPECT_FALSE(cpu.ps.Z);
-    EXPECT_FALSE(cpu.ps.N);
-    VerifyUnmodifiedCPUFlagsFromLoadRegister(cpu.ps, psCopy);
+    EXPECT_FALSE(cpu.PS.test(CPU::StatusFlags::Z));
+    EXPECT_FALSE(cpu.PS.test(CPU::StatusFlags::N));
+    VerifyUnmodifiedCPUFlagsFromLoadRegister(cpu.PS, psCopy);
 }
 

@@ -15,26 +15,17 @@ public:
     void TestStoreRegisterAbsolute(byte, byte CPU::*);
 };
 
-static void VerifyUnmodifiedCPUFlagsFromStoreRegister(const CPU::PS& ps, const CPU::PS& psCopy) {
-    EXPECT_EQ(ps.N, psCopy.N);
-    EXPECT_EQ(ps.Z, psCopy.Z);
-    EXPECT_EQ(ps.C, psCopy.C);
-    EXPECT_EQ(ps.I, psCopy.I);
-    EXPECT_EQ(ps.D, psCopy.D);
-    EXPECT_EQ(ps.B, psCopy.B);
-    EXPECT_EQ(ps.V, psCopy.V);
-}
-
 void _6502StoreRegisterTests::TestStoreRegisterZeroPage(byte opcode, byte CPU::* Register) {
     cpu.mem[0xFFFC] = opcode;
     cpu.mem[0xFFFD] = 0x42;
     cpu.mem[0x0042] = cpu.*Register + 1;
-    CPU::PS psCopy = cpu.ps;
-    dword cyclesUsed = cpu.execute(3);
+    auto psCopy = cpu.PS;
+    constexpr dword EXPECTED_CYCLES = 3;
+    dword cyclesUsed = cpu.execute(EXPECTED_CYCLES);
 
-    EXPECT_EQ(cyclesUsed, 3);
+    EXPECT_EQ(cyclesUsed, EXPECTED_CYCLES);
     EXPECT_EQ(cpu.*Register, cpu.mem[0x0042]);
-    VerifyUnmodifiedCPUFlagsFromStoreRegister(cpu.ps, psCopy);
+    EXPECT_EQ(cpu.PS, psCopy);
 }
 
 void _6502StoreRegisterTests::TestStoreRegisterZeroPageX(byte opcode, byte CPU::* Register) {
@@ -43,12 +34,13 @@ void _6502StoreRegisterTests::TestStoreRegisterZeroPageX(byte opcode, byte CPU::
     cpu.mem[0xFFFC] = opcode;
     cpu.mem[0xFFFD] = 0x42;
     cpu.mem[0x0047] = cpu.*Register + 1;
-    CPU::PS psCopy = cpu.ps;
-    dword cyclesUsed = cpu.execute(4);
+    auto psCopy = cpu.PS;
+    constexpr dword EXPECTED_CYCLES = 4;
+    dword cyclesUsed = cpu.execute(EXPECTED_CYCLES);
 
-    EXPECT_EQ(cyclesUsed, 4);
+    EXPECT_EQ(cyclesUsed, EXPECTED_CYCLES);
     EXPECT_EQ(cpu.*Register, cpu.mem[0x0047]);
-    VerifyUnmodifiedCPUFlagsFromStoreRegister(cpu.ps, psCopy);
+    EXPECT_EQ(cpu.PS, psCopy);
 }
 
 void _6502StoreRegisterTests::TestStoreRegisterZeroPageXWhenItRaps(byte opcode, byte CPU::* Register) {
@@ -57,12 +49,13 @@ void _6502StoreRegisterTests::TestStoreRegisterZeroPageXWhenItRaps(byte opcode, 
     cpu.mem[0xFFFC] = opcode;
     cpu.mem[0xFFFD] = 0x80;
     cpu.mem[0x007F] = cpu.*Register + 1;
-    CPU::PS psCopy = cpu.ps;
-    dword cyclesUsed = cpu.execute(4);
+    auto psCopy = cpu.PS;
+    constexpr dword EXPECTED_CYCLES = 4;
+    dword cyclesUsed = cpu.execute(EXPECTED_CYCLES);
 
-    EXPECT_EQ(cyclesUsed, 4);
+    EXPECT_EQ(cyclesUsed, EXPECTED_CYCLES);
     EXPECT_EQ(cpu.*Register, cpu.mem[0x007F]);
-    VerifyUnmodifiedCPUFlagsFromStoreRegister(cpu.ps, psCopy);
+    EXPECT_EQ(cpu.PS, psCopy);
 }
 
 void _6502StoreRegisterTests::TestStoreRegisterAbsolute(byte opcode, byte CPU::* Register) {
@@ -70,12 +63,13 @@ void _6502StoreRegisterTests::TestStoreRegisterAbsolute(byte opcode, byte CPU::*
     cpu.mem[0xFFFD] = 0x80;
     cpu.mem[0xFFFE] = 0x44;
     cpu.mem[0x4480] = cpu.*Register + 1;
-    CPU::PS psCopy = cpu.ps;
-    dword cyclesUsed = cpu.execute(4);
+    auto psCopy = cpu.PS;
+    constexpr dword EXPECTED_CYCLES = 4;
+    dword cyclesUsed = cpu.execute(EXPECTED_CYCLES);
 
-    EXPECT_EQ(cyclesUsed, 4);
+    EXPECT_EQ(cyclesUsed, EXPECTED_CYCLES);
     EXPECT_EQ(cpu.*Register, cpu.mem[0x4480]);
-    VerifyUnmodifiedCPUFlagsFromStoreRegister(cpu.ps, psCopy);
+    EXPECT_EQ(cpu.PS, psCopy);
 }
 
 TEST_F(_6502StoreRegisterTests, STAZeroPageCanStoreARegisterIntoMemory) {
@@ -111,12 +105,13 @@ TEST_F(_6502StoreRegisterTests, STXZeroPageYCanStoreXRegisterIntoMemory) {
     cpu.mem[0xFFFC] = CPU::INS_STX_ZPY;
     cpu.mem[0xFFFD] = 0x42;
     cpu.mem[0x0047] = cpu.X + 1;
-    CPU::PS psCopy = cpu.ps;
-    dword cyclesUsed = cpu.execute(4);
+    auto psCopy = cpu.PS;
+    constexpr dword EXPECTED_CYCLES = 4;
+    dword cyclesUsed = cpu.execute(EXPECTED_CYCLES);
 
-    EXPECT_EQ(cyclesUsed, 4);
+    EXPECT_EQ(cyclesUsed, EXPECTED_CYCLES);
     EXPECT_EQ(cpu.X, cpu.mem[0x0047]);
-    VerifyUnmodifiedCPUFlagsFromStoreRegister(cpu.ps, psCopy);
+    EXPECT_EQ(cpu.PS, psCopy);
 }
 
 TEST_F(_6502StoreRegisterTests, STXZeroPageYCanStoreXRegisterIntoMemoryWhenItRaps) {
@@ -124,12 +119,13 @@ TEST_F(_6502StoreRegisterTests, STXZeroPageYCanStoreXRegisterIntoMemoryWhenItRap
     cpu.mem[0xFFFC] = CPU::INS_STX_ZPY;
     cpu.mem[0xFFFD] = 0x80;
     cpu.mem[0x007F] = cpu.X + 1;
-    CPU::PS psCopy = cpu.ps;
-    dword cyclesUsed = cpu.execute(4);
+    auto psCopy = cpu.PS;
+    constexpr dword EXPECTED_CYCLES = 4;
+    dword cyclesUsed = cpu.execute(EXPECTED_CYCLES);
 
-    EXPECT_EQ(cyclesUsed, 4);
+    EXPECT_EQ(cyclesUsed, EXPECTED_CYCLES);
     EXPECT_EQ(cpu.X, cpu.mem[0x007F]);
-    VerifyUnmodifiedCPUFlagsFromStoreRegister(cpu.ps, psCopy);
+    EXPECT_EQ(cpu.PS, psCopy);
 }
 
 TEST_F(_6502StoreRegisterTests, STAAbsoluteCanStoreARegisterIntoMemory) {
@@ -150,12 +146,13 @@ TEST_F(_6502StoreRegisterTests, STAAbsoluteXCanStoreARegisterIntoMemory) {
     cpu.mem[0xFFFD] = 0x80;
     cpu.mem[0xFFFE] = 0x44;
     cpu.mem[0x4481] = cpu.A + 1;
-    CPU::PS psCopy = cpu.ps;
-    dword cyclesUsed = cpu.execute(5);
+    auto psCopy = cpu.PS;
+    constexpr dword EXPECTED_CYCLES = 5;
+    dword cyclesUsed = cpu.execute(EXPECTED_CYCLES);
 
-    EXPECT_EQ(cyclesUsed, 5);
+    EXPECT_EQ(cyclesUsed, EXPECTED_CYCLES);
     EXPECT_EQ(cpu.A, cpu.mem[0x4481]);
-    VerifyUnmodifiedCPUFlagsFromStoreRegister(cpu.ps, psCopy);
+    EXPECT_EQ(cpu.PS, psCopy);
 }
 
 TEST_F(_6502StoreRegisterTests, STAAbsoluteXCanStoreARegisterIntoMemoryWhenPageBounderyCrossed) {
@@ -164,12 +161,13 @@ TEST_F(_6502StoreRegisterTests, STAAbsoluteXCanStoreARegisterIntoMemoryWhenPageB
     cpu.mem[0xFFFD] = 0x02;
     cpu.mem[0xFFFE] = 0x44;
     cpu.mem[0x4401] = cpu.A + 1;
-    CPU::PS psCopy = cpu.ps;
-    dword cyclesUsed = cpu.execute(5);
+    auto psCopy = cpu.PS;
+    constexpr dword EXPECTED_CYCLES = 5;
+    dword cyclesUsed = cpu.execute(EXPECTED_CYCLES);
 
-    EXPECT_EQ(cyclesUsed, 5);
+    EXPECT_EQ(cyclesUsed, EXPECTED_CYCLES);
     EXPECT_EQ(cpu.A, cpu.mem[0x4401]);
-    VerifyUnmodifiedCPUFlagsFromStoreRegister(cpu.ps, psCopy);
+    EXPECT_EQ(cpu.PS, psCopy);
 }
 
 TEST_F(_6502StoreRegisterTests, STAAbsoluteYCanStoreARegisterIntoMemory) {
@@ -178,14 +176,15 @@ TEST_F(_6502StoreRegisterTests, STAAbsoluteYCanStoreARegisterIntoMemory) {
     cpu.mem[0xFFFD] = 0x80;
     cpu.mem[0xFFFE] = 0x44;
     cpu.mem[0x4481] = cpu.A + 1;
-    CPU::PS psCopy = cpu.ps;
-    dword cyclesUsed = cpu.execute(5);
+    auto psCopy = cpu.PS;
+    constexpr dword EXPECTED_CYCLES = 5;
+    dword cyclesUsed = cpu.execute(EXPECTED_CYCLES);
 
-    EXPECT_EQ(cyclesUsed, 5);
+    EXPECT_EQ(cyclesUsed, EXPECTED_CYCLES);
     EXPECT_EQ(cpu.A, cpu.mem[0x4481]);
-    EXPECT_FALSE(cpu.ps.Z);
-    EXPECT_FALSE(cpu.ps.N);
-    VerifyUnmodifiedCPUFlagsFromStoreRegister(cpu.ps, psCopy);
+    EXPECT_FALSE(cpu.PS.test(CPU::StatusFlags::Z));
+    EXPECT_FALSE(cpu.PS.test(CPU::StatusFlags::N));
+    EXPECT_EQ(cpu.PS, psCopy);
 }
 
 TEST_F(_6502StoreRegisterTests, STAAbsoluteYCanStoreARegisterIntoMemoryWhenPageBounderyCrossed) {
@@ -194,12 +193,13 @@ TEST_F(_6502StoreRegisterTests, STAAbsoluteYCanStoreARegisterIntoMemoryWhenPageB
     cpu.mem[0xFFFD] = 0x02;
     cpu.mem[0xFFFE] = 0x44;
     cpu.mem[0x4401] = cpu.A + 1;
-    CPU::PS psCopy = cpu.ps;
-    dword cyclesUsed = cpu.execute(5);
+    auto psCopy = cpu.PS;
+    constexpr dword EXPECTED_CYCLES = 5;
+    dword cyclesUsed = cpu.execute(EXPECTED_CYCLES);
 
-    EXPECT_EQ(cyclesUsed, 5);
+    EXPECT_EQ(cyclesUsed, EXPECTED_CYCLES);
     EXPECT_EQ(cpu.A, cpu.mem[0x4401]);
-    VerifyUnmodifiedCPUFlagsFromStoreRegister(cpu.ps, psCopy);
+    EXPECT_EQ(cpu.PS, psCopy);
 }
 
 TEST_F(_6502StoreRegisterTests, STAXIndirectCanStoreARegisterIntoMemory) {
@@ -209,28 +209,31 @@ TEST_F(_6502StoreRegisterTests, STAXIndirectCanStoreARegisterIntoMemory) {
     cpu.mem[0x0006] = 0x00;
     cpu.mem[0x0007] = 0x80;
     cpu.mem[0x8000] = cpu.A + 1;
-    CPU::PS psCopy = cpu.ps;
-    dword cyclesUsed = cpu.execute(6);
+    auto psCopy = cpu.PS;
+    constexpr dword EXPECTED_CYCLES = 6;
+    dword cyclesUsed = cpu.execute(EXPECTED_CYCLES);
 
-    EXPECT_EQ(cyclesUsed, 6);
+    EXPECT_EQ(cyclesUsed, EXPECTED_CYCLES);
     EXPECT_EQ(cpu.A, cpu.mem[0x8000]);
-    VerifyUnmodifiedCPUFlagsFromStoreRegister(cpu.ps, psCopy);
+    EXPECT_EQ(cpu.PS, psCopy);
 }
 
 TEST_F(_6502StoreRegisterTests, STAXIndirectCanStoreARegisterIntoMemoryWhenItRaps) {
-    cpu.ps.Z = cpu.ps.N = true;
+    cpu.PS.set(CPU::StatusFlags::Z, true);
+cpu.PS.set(CPU::StatusFlags::N, true);
     cpu.X = 0xFF;
     cpu.mem[0xFFFC] = CPU::INS_STA_XIND;
     cpu.mem[0xFFFD] = 0x00;
     cpu.mem[0x00FF] = 0x00;
     cpu.mem[0x0000] = 0x80;
     cpu.mem[0x8000] = cpu.A + 1;
-    CPU::PS psCopy = cpu.ps;
-    dword cyclesUsed = cpu.execute(6);
+    auto psCopy = cpu.PS;
+    constexpr dword EXPECTED_CYCLES = 6;
+    dword cyclesUsed = cpu.execute(EXPECTED_CYCLES);
 
-    EXPECT_EQ(cyclesUsed, 6);
+    EXPECT_EQ(cyclesUsed, EXPECTED_CYCLES);
     EXPECT_EQ(cpu.A, cpu.mem[0x8000]);
-    VerifyUnmodifiedCPUFlagsFromStoreRegister(cpu.ps, psCopy);
+    EXPECT_EQ(cpu.PS, psCopy);
 }
 
 TEST_F(_6502StoreRegisterTests, STAIndirectYCanStoreARegisterIntoMemory) {
@@ -240,14 +243,15 @@ TEST_F(_6502StoreRegisterTests, STAIndirectYCanStoreARegisterIntoMemory) {
     cpu.mem[0x0002] = 0x00;
     cpu.mem[0x0003] = 0x80;
     cpu.mem[0x8004] = cpu.A + 1;
-    CPU::PS psCopy = cpu.ps;
-    dword cyclesUsed = cpu.execute(6);
+    auto psCopy = cpu.PS;
+    constexpr dword EXPECTED_CYCLES = 6;
+    dword cyclesUsed = cpu.execute(EXPECTED_CYCLES);
 
-    EXPECT_EQ(cyclesUsed, 6);
+    EXPECT_EQ(cyclesUsed, EXPECTED_CYCLES);
     EXPECT_EQ(cpu.A, cpu.mem[0x8004]);
-    EXPECT_FALSE(cpu.ps.Z);
-    EXPECT_FALSE(cpu.ps.N);
-    VerifyUnmodifiedCPUFlagsFromStoreRegister(cpu.ps, psCopy);
+    EXPECT_FALSE(cpu.PS.test(CPU::StatusFlags::Z));
+    EXPECT_FALSE(cpu.PS.test(CPU::StatusFlags::N));
+    EXPECT_EQ(cpu.PS, psCopy);
 }
 
 TEST_F(_6502StoreRegisterTests, STAIndirectYCanStoreARegisterIntoMemoryWhenPageBounderyCrossed) {
@@ -257,10 +261,11 @@ TEST_F(_6502StoreRegisterTests, STAIndirectYCanStoreARegisterIntoMemoryWhenPageB
     cpu.mem[0x0002] = 0x02;
     cpu.mem[0x0003] = 0x80;
     cpu.mem[0x8101] = cpu.A + 1; //0x8002 + 0xFF
-    CPU::PS psCopy = cpu.ps;
-    dword cyclesUsed = cpu.execute(6);
+    auto psCopy = cpu.PS;
+    constexpr dword EXPECTED_CYCLES = 6;
+    dword cyclesUsed = cpu.execute(EXPECTED_CYCLES);
 
-    EXPECT_EQ(cyclesUsed, 6);
+    EXPECT_EQ(cyclesUsed, EXPECTED_CYCLES);
     EXPECT_EQ(cpu.A, cpu.mem[0x8101]);
-    VerifyUnmodifiedCPUFlagsFromStoreRegister(cpu.ps, psCopy);
+    EXPECT_EQ(cpu.PS, psCopy);
 }

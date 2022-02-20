@@ -6,7 +6,7 @@ using namespace m6502;
 class _6502LoadRegisterBenchmarks : public benchmark::Fixture {
 public:
     const static benchmark::TimeUnit TimeUnit = benchmark::TimeUnit::kMicrosecond;
-    CPU cpu;
+    CPU cpu{1};
     _6502LoadRegisterBenchmarks() {/* Iterations(3);*/}
     void SetUp(const ::benchmark::State& state) { cpu.reset(); }
     void TearDown(const ::benchmark::State& state) {}
@@ -35,9 +35,8 @@ byte _6502LoadRegisterBenchmarks::BenchmarkLoadRegisterZeroPage(byte opcode, byt
 }
 
 BENCHMARK_DEFINE_F(_6502LoadRegisterBenchmarks, LDAImmediate)(benchmark::State& st) {
-    for(auto _ : st) {
+    for(auto _ : st)
         benchmark::DoNotOptimize(BenchmarkLoadRegisterImmediate(CPU::INS_LDA_IM, &CPU::A));
-    }
 }
 
 BENCHMARK_DEFINE_F(_6502LoadRegisterBenchmarks, LDXImmediate)(benchmark::State& st) {

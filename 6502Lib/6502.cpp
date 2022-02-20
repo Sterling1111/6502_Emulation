@@ -5,7 +5,7 @@ using namespace m6502;
 //return the number of cycles that were used
 dword CPU::execute(dword unsignedCycles, dword instructionsToExecute) {
     const dword cyclesPassedIn = unsignedCycles;
-    Cycles cycles(static_cast<sdword>(unsignedCycles), this->TCSFrequency, 1);
+    Cycles cycles(static_cast<sdword>(unsignedCycles), this->cycleDuration);
 
     auto loadRegister = [this](byte value, byte& Register) {
         Register = value;
@@ -136,7 +136,7 @@ dword CPU::execute(dword unsignedCycles, dword instructionsToExecute) {
 void CPU::reset(word address) {
     PC = address;
     SP = 0xFF;
-    ps.C = ps.Z = ps.I = ps.D = ps.B = ps.V = ps.N = 0;
+    PS.reset();
     A = X = Y = 0;
 }
 
@@ -182,8 +182,8 @@ void CPU::writeByte(byte data, word address, Cycles &cycles) {
 }
 
 void CPU::loadRegisterSetStatus(byte Register) {
-    ps.Z = (Register == 0);
-    ps.N = (Register & 0b10000000) > 0;
+    PS.set(StatusFlags::Z, Register == 0);
+    PS.set(StatusFlags::N , (Register & 0b10000000) > 0);
 }
 
 void CPU::pushByteToStack(byte data, Cycles &cycles) {
@@ -299,4 +299,12 @@ word CPU::writeAddrIndirectY(Cycles &cycles) {
     word address = readWord(zpAddress, cycles);
     --cycles;
     return address + Y;
+}
+
+dword CPU::getTCSFrequency() {
+    int eax{};
+    __asm__("mov $0x16, %eax\n\t");
+    __asm__("cpuid\n\t");
+    __asm__("mov %%eax, %0\n\t":"=r" (eax));
+    return eax;
 }
