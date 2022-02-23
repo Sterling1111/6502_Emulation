@@ -1,21 +1,19 @@
 #include "benchmark/benchmark.h"
 #include "6502.h"
 
-using namespace m6502;
-
 class _6502LoadRegisterBenchmarks : public benchmark::Fixture {
 public:
     const static benchmark::TimeUnit TimeUnit = benchmark::TimeUnit::kMicrosecond;
-    CPU cpu{1};
+    m6502::CPU cpu{1};
     _6502LoadRegisterBenchmarks() {/* Iterations(3);*/}
     void SetUp(const ::benchmark::State& state) { cpu.PC = 0xFFFC; }
     void TearDown(const ::benchmark::State& state) {}
 
-    byte BenchmarkLoadRegisterImmediate(byte, byte m6502::CPU::*);
-    byte BenchmarkLoadRegisterZeroPage(byte, byte m6502::CPU::*);
+    m6502::byte BenchmarkLoadRegisterImmediate(m6502::byte, m6502::byte m6502::CPU::*);
+    m6502::byte BenchmarkLoadRegisterZeroPage(m6502::byte, m6502::byte m6502::CPU::*);
 };
 
-byte _6502LoadRegisterBenchmarks::BenchmarkLoadRegisterImmediate(byte opcode, byte m6502::CPU::* Register) {
+m6502::byte _6502LoadRegisterBenchmarks::BenchmarkLoadRegisterImmediate(m6502::byte opcode, m6502::byte m6502::CPU::* Register) {
     cpu.mem[0xFFFC] = opcode;
     cpu.mem[0xFFFD] = 0x42;
     cpu.execute();
@@ -23,7 +21,7 @@ byte _6502LoadRegisterBenchmarks::BenchmarkLoadRegisterImmediate(byte opcode, by
     return cpu.*Register;
 }
 
-byte _6502LoadRegisterBenchmarks::BenchmarkLoadRegisterZeroPage(byte opcode, byte m6502::CPU::* Register) {
+m6502::byte _6502LoadRegisterBenchmarks::BenchmarkLoadRegisterZeroPage(m6502::byte opcode, m6502::byte m6502::CPU::* Register) {
     cpu.mem[0xFFFC] = opcode;
     cpu.mem[0xFFFD] = 0x42;
     cpu.mem[0x0042] = 0x37;

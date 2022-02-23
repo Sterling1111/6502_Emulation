@@ -1,11 +1,9 @@
 #include "gtest/gtest.h"
 #include "6502.h"
 
-using namespace m6502;
-
 class _6502JumpsAndCallsTests : public testing::Test {
 public:
-    CPU cpu;
+    m6502::CPU cpu;
     virtual void SetUp() {
         cpu.reset();
         cpu.PC = 0xFFFC;
