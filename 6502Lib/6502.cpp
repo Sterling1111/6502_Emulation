@@ -128,6 +128,30 @@ dword CPU::execute(uint64_t instructionsToExecute) {
                 byte latch{readByte(pointer)};
                 PC = (readByte((pointer & 0x00FF) == 0xFF ? (pointer & 0xFF00) : pointer + 1) << 8) | latch;
             } break;
+            case INS_PHA_IMP : {
+                fetchByte();
+                pushByteToStack(A);
+            } break;
+            case INS_PHP_IMP : {
+                fetchByte();
+                pushByteToStack(static_cast<byte>(PS.to_ulong()));
+            } break;
+            case INS_PLA_IMP : {
+                fetchByte();
+                loadRegister(pullByteFromStack(true), A);
+            } break;
+            case INS_PLP_IMP : {
+                fetchByte();
+                PS = pullByteFromStack(true);
+            } break;
+            case INS_TSX_IMP : {
+                loadRegister(SP, X);
+                fetchByte();
+            } break;
+            case INS_TXS_IMP : {
+                SP = X;
+                fetchByte();
+            } break;
             default: {
                 std::cerr << "Error: instruction " << instruction << "not handled" << std::endl;
                 goto INSTRUCTION_NOT_HANDLED;
