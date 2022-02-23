@@ -6,9 +6,9 @@ using namespace m6502;
 class _6502LoadRegisterBenchmarks : public benchmark::Fixture {
 public:
     const static benchmark::TimeUnit TimeUnit = benchmark::TimeUnit::kMicrosecond;
-    CPU cpu{1};
+    CPU cpu{};
     _6502LoadRegisterBenchmarks() {/* Iterations(3);*/}
-    void SetUp(const ::benchmark::State& state) { cpu.reset(); }
+    void SetUp(const ::benchmark::State& state) { cpu.PC = 0xFFFC; }
     void TearDown(const ::benchmark::State& state) {}
 
     byte BenchmarkLoadRegisterImmediate(byte, byte CPU::*);
@@ -18,8 +18,7 @@ public:
 byte _6502LoadRegisterBenchmarks::BenchmarkLoadRegisterImmediate(byte opcode, byte CPU::* Register) {
     cpu.mem[0xFFFC] = opcode;
     cpu.mem[0xFFFD] = 0x42;
-    constexpr int REQUIRED_CYCLES = 2;
-    cpu.execute(REQUIRED_CYCLES);
+    cpu.execute();
     cpu.PC = 0xFFFC;
     return cpu.*Register;
 }
@@ -28,8 +27,7 @@ byte _6502LoadRegisterBenchmarks::BenchmarkLoadRegisterZeroPage(byte opcode, byt
     cpu.mem[0xFFFC] = opcode;
     cpu.mem[0xFFFD] = 0x42;
     cpu.mem[0x0042] = 0x37;
-    constexpr int REQUIRED_CYCLES = 3;
-    cpu.execute(REQUIRED_CYCLES);
+    cpu.execute();
     cpu.PC = 0xFFFC;
     return cpu.*Register;
 }

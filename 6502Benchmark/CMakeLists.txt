@@ -20,5 +20,4 @@ set  (6502_Benchmark_SOURCES
 
 add_executable( 6502Benchmark ${6502_Benchmark_SOURCES} 	)
 add_dependencies( 6502Benchmark 6502Lib )
-target_link_libraries(6502Benchmark benchmark::benchmark)
-target_link_libraries(6502Benchmark 6502Lib)
+target_link_libraries(6502Benchmark benchmark::benchmark 6502Lib)

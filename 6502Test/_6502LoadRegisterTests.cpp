@@ -6,7 +6,7 @@ using namespace m6502;
 class _6502LoadRegisterTests : public testing::Test {
 public:
     CPU cpu;
-    virtual void SetUp() { cpu.reset(); }
+    virtual void SetUp() { cpu.PC = 0xFFFC; }
     virtual void TearDown() {}
 
     void TestLoadRegisterImmediate(byte, byte CPU::*);
@@ -32,22 +32,14 @@ TEST_F(_6502LoadRegisterTests, CPUTerminatesIfInstructionInvalid) {
     cpu.mem[0xFFFC] = 0x00;
     cpu.mem[0xFFFD] = 0x00;
     constexpr dword EXPECTED_CYCLES = 1;
-    dword cyclesUsed = cpu.execute(EXPECTED_CYCLES);
+    dword cyclesUsed = cpu.execute();
     EXPECT_EQ(cyclesUsed, EXPECTED_CYCLES);
 }
 
-TEST_F(_6502LoadRegisterTests, CPUCanCompleteCurrentInstructionIfInsufficientCyclesGiven) {
-    cpu.mem[0xFFFC] = CPU::INS_LDA_IM;
-    cpu.mem[0xFFFD] = 0x84;
-    constexpr dword EXPECTED_CYCLES = 2;
-    constexpr dword GIVEN_CYCLES = 2;
-    dword cyclesUsed = cpu.execute(GIVEN_CYCLES);
-    EXPECT_EQ(cyclesUsed, EXPECTED_CYCLES);
-}
-
-TEST_F(_6502LoadRegisterTests, CPUDoesNothingWhenWeExecuteZeroCycles) {
+TEST_F(_6502LoadRegisterTests, CPUDoesNothingWhenWeExecuteZeroInstructions) {
+    constexpr dword INSTRUCTIONS = 0;
     constexpr dword EXPECTED_CYCLES = 0;
-    dword cyclesUsed = cpu.execute(EXPECTED_CYCLES);
+    dword cyclesUsed = cpu.execute(INSTRUCTIONS);
     EXPECT_EQ(cyclesUsed, EXPECTED_CYCLES);
 }
 
@@ -57,7 +49,7 @@ TEST_F(_6502LoadRegisterTests, LDAImmediateCanAffectTheZeroFlag) {
     cpu.mem[0xFFFD] = 0x00;
     auto psCopy = cpu.PS;
     constexpr dword EXPECTED_CYCLES = 2;
-    dword cyclesUsed = cpu.execute(EXPECTED_CYCLES);
+    dword cyclesUsed = cpu.execute();
 
     EXPECT_EQ(cyclesUsed, EXPECTED_CYCLES);
     EXPECT_EQ(cpu.PS.test(CPU::StatusFlags::Z), true);
@@ -71,7 +63,7 @@ void _6502LoadRegisterTests::TestLoadRegisterImmediate(byte opcode, byte CPU::* 
     cpu.mem[0xFFFD] = 0x84;
     auto psCopy = cpu.PS;
     constexpr dword EXPECTED_CYCLES = 2;
-    dword cyclesUsed = cpu.execute(EXPECTED_CYCLES);
+    dword cyclesUsed = cpu.execute();
 
     EXPECT_EQ(cyclesUsed, EXPECTED_CYCLES);
     EXPECT_EQ(cpu.*Register, 0x84);
@@ -87,7 +79,7 @@ void _6502LoadRegisterTests::TestLoadRegisterZeroPage(byte opcode, byte CPU::* R
     cpu.mem[0x0042] = 0x37;
     auto psCopy = cpu.PS;
     constexpr dword EXPECTED_CYCLES = 3;
-    dword cyclesUsed = cpu.execute(EXPECTED_CYCLES);
+    dword cyclesUsed = cpu.execute();
 
     EXPECT_EQ(cyclesUsed, EXPECTED_CYCLES);
     EXPECT_EQ(cpu.*Register, 0x37);
@@ -105,7 +97,7 @@ void _6502LoadRegisterTests::TestLoadRegisterZeroPageX(byte opcode, byte CPU::* 
     cpu.mem[0x0047] = 0x37;
     auto psCopy = cpu.PS;
     constexpr dword EXPECTED_CYCLES = 4;
-    dword cyclesUsed = cpu.execute(EXPECTED_CYCLES);
+    dword cyclesUsed = cpu.execute();
 
     EXPECT_EQ(cyclesUsed, EXPECTED_CYCLES);
     EXPECT_EQ(cpu.*Register, 0x37);
@@ -123,7 +115,7 @@ void _6502LoadRegisterTests::TestLoadRegisterZeroPageXWhenItRaps(byte opcode, by
     cpu.mem[0x007F] = 0x37;
     auto psCopy = cpu.PS;
     constexpr dword EXPECTED_CYCLES = 4;
-    dword cyclesUsed = cpu.execute(EXPECTED_CYCLES);
+    dword cyclesUsed = cpu.execute();
 
     EXPECT_EQ(cyclesUsed, EXPECTED_CYCLES);
     EXPECT_EQ(cpu.*Register, 0x37);
@@ -141,7 +133,7 @@ void _6502LoadRegisterTests::TestLoadRegisterAbsolute(byte opcode, byte CPU::* R
     cpu.mem[0x4480] = 0x37;
     auto psCopy = cpu.PS;
     constexpr dword EXPECTED_CYCLES = 4;
-    dword cyclesUsed = cpu.execute(EXPECTED_CYCLES);
+    dword cyclesUsed = cpu.execute();
 
     EXPECT_EQ(cyclesUsed, EXPECTED_CYCLES);
     EXPECT_EQ(cpu.*Register, 0x37);
@@ -160,7 +152,7 @@ void _6502LoadRegisterTests::TestLoadRegisterAbsoluteX(byte opcode, byte CPU::* 
     cpu.mem[0x4481] = 0x37;
     auto psCopy = cpu.PS;
     constexpr dword EXPECTED_CYCLES = 4;
-    dword cyclesUsed = cpu.execute(EXPECTED_CYCLES);
+    dword cyclesUsed = cpu.execute();
 
     EXPECT_EQ(cyclesUsed, EXPECTED_CYCLES);
     EXPECT_EQ(cpu.*Register, 0x37);
@@ -179,7 +171,7 @@ void _6502LoadRegisterTests::TestLoadRegisterAbsoluteXWhenPageBounderyCrossed(by
     cpu.mem[0x4401] = 0x37;
     auto psCopy = cpu.PS;
     constexpr dword EXPECTED_CYCLES = 5;
-    dword cyclesUsed = cpu.execute(EXPECTED_CYCLES);
+    dword cyclesUsed = cpu.execute();
 
     EXPECT_EQ(cyclesUsed, EXPECTED_CYCLES);
     EXPECT_EQ(cpu.*Register, 0x37);
@@ -198,7 +190,7 @@ void _6502LoadRegisterTests::TestLoadRegisterAbsoluteY(byte opcode, byte CPU::* 
     cpu.mem[0x4481] = 0x37;
     auto psCopy = cpu.PS;
     constexpr dword EXPECTED_CYCLES = 4;
-    dword cyclesUsed = cpu.execute(EXPECTED_CYCLES);
+    dword cyclesUsed = cpu.execute();
 
     EXPECT_EQ(cyclesUsed, EXPECTED_CYCLES);
     EXPECT_EQ(cpu.*Register, 0x37);
@@ -217,7 +209,7 @@ void _6502LoadRegisterTests::TestLoadRegisterAbsoluteYWhenPageBounderyCrossed(by
     cpu.mem[0x4401] = 0x37;
     auto psCopy = cpu.PS;
     constexpr dword EXPECTED_CYCLES = 5;
-    dword cyclesUsed = cpu.execute(EXPECTED_CYCLES);
+    dword cyclesUsed = cpu.execute();
 
     EXPECT_EQ(cyclesUsed, EXPECTED_CYCLES);
     EXPECT_EQ(cpu.*Register, 0x37);
@@ -275,7 +267,7 @@ TEST_F(_6502LoadRegisterTests, LDXZeroPageYCanLoadAValueIntoTheXRegister) {
     cpu.mem[0x0047] = 0x37;
     auto psCopy = cpu.PS;
     constexpr dword EXPECTED_CYCLES = 4;
-    dword cyclesUsed = cpu.execute(EXPECTED_CYCLES);
+    dword cyclesUsed = cpu.execute();
 
     EXPECT_EQ(cyclesUsed, EXPECTED_CYCLES);
     EXPECT_EQ(cpu.X, 0x37);
@@ -293,7 +285,7 @@ TEST_F(_6502LoadRegisterTests, LDXZeroPageYCanLoadAValueIntoTheXRegisterWhenItRa
     cpu.mem[0x007F] = 0x37;
     auto psCopy = cpu.PS;
     constexpr dword EXPECTED_CYCLES = 4;
-    dword cyclesUsed = cpu.execute(EXPECTED_CYCLES);
+    dword cyclesUsed = cpu.execute();
 
     EXPECT_EQ(cyclesUsed, EXPECTED_CYCLES);
     EXPECT_EQ(cpu.X, 0x37);
@@ -357,7 +349,7 @@ TEST_F(_6502LoadRegisterTests, LDAXIndirectCanLoadAValueIntoTheARegister) {
     cpu.mem[0x8000] = 0x37;
     auto psCopy = cpu.PS;
     constexpr dword EXPECTED_CYCLES = 6;
-    dword cyclesUsed = cpu.execute(EXPECTED_CYCLES);
+    dword cyclesUsed = cpu.execute();
 
     EXPECT_EQ(cyclesUsed, EXPECTED_CYCLES);
     EXPECT_EQ(cpu.A, 0x37);
@@ -377,7 +369,7 @@ TEST_F(_6502LoadRegisterTests, LDAXIndirectCanLoadAValueIntoTheARegisterWhenItRa
     cpu.mem[0x8000] = 0x37;
     auto psCopy = cpu.PS;
     constexpr dword EXPECTED_CYCLES = 6;
-    dword cyclesUsed = cpu.execute(EXPECTED_CYCLES);
+    dword cyclesUsed = cpu.execute();
 
     EXPECT_EQ(cyclesUsed, EXPECTED_CYCLES);
     EXPECT_EQ(cpu.A, 0x37);
@@ -397,7 +389,7 @@ TEST_F(_6502LoadRegisterTests, LDAIndirectYCanLoadAValueIntoTheARegister) {
     cpu.mem[0x8004] = 0x37;
     auto psCopy = cpu.PS;
     constexpr dword EXPECTED_CYCLES = 5;
-    dword cyclesUsed = cpu.execute(EXPECTED_CYCLES);
+    dword cyclesUsed = cpu.execute();
 
     EXPECT_EQ(cyclesUsed, EXPECTED_CYCLES);
     EXPECT_EQ(cpu.A, 0x37);
@@ -417,7 +409,7 @@ TEST_F(_6502LoadRegisterTests, LDAIndirectYCanLoadAValueIntoTheARegisterWhenZero
     cpu.mem[0x8101] = 0x37; //0x8002 + 0xFF
     auto psCopy = cpu.PS;
     constexpr dword EXPECTED_CYCLES = 6;
-    dword cyclesUsed = cpu.execute(EXPECTED_CYCLES);
+    dword cyclesUsed = cpu.execute();
 
     EXPECT_EQ(cyclesUsed, EXPECTED_CYCLES);
     EXPECT_EQ(cpu.A, 0x37);

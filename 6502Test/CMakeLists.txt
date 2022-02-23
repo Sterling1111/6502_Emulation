@@ -22,5 +22,4 @@ set  (6502_TEST_SOURCES
 
 add_executable( 6502Test ${6502_TEST_SOURCES} 	)
 add_dependencies( 6502Test 6502Lib )
-target_link_libraries(6502Test gtest)
-target_link_libraries(6502Test 6502Lib)
+target_link_libraries(6502Test gtest 6502Lib)

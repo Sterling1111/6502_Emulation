@@ -3,124 +3,130 @@
 using namespace m6502;
 
 //return the number of cycles that were used
-dword CPU::execute(dword unsignedCycles, dword instructionsToExecute) {
-    const dword cyclesPassedIn = unsignedCycles;
-    Cycles cycles(static_cast<sdword>(unsignedCycles), this->cycleDuration);
+dword CPU::execute(uint64_t instructionsToExecute) {
+    cycles.reset();
 
     auto loadRegister = [this](byte value, byte& Register) {
         Register = value;
         loadRegisterSetStatus(Register);
     };
-    while(cycles > 0 && instructionsToExecute) {
-        byte instruction{fetchByte(cycles)};
-        instructionsToExecute--;
+    while(instructionsToExecute--) {
+        byte instruction{fetchByte()};
         switch (instruction) {
             case INS_LDA_IM : /*2 cycles*/ {
-                loadRegister(fetchByte(cycles), A);
+                loadRegister(fetchByte(), A);
             } break;
             case INS_LDX_IM : {
-                loadRegister(fetchByte(cycles), X);
+                loadRegister(fetchByte(), X);
             } break;
             case INS_LDY_IM : {
-                loadRegister(fetchByte(cycles), Y);
+                loadRegister(fetchByte(), Y);
             } break;
             case INS_LDA_ZP : /*3 cycles*/ {
-                loadRegister(readAddrZeroPage(cycles), A);
+                loadRegister(readAddrZeroPage(), A);
             } break;
             case INS_LDX_ZP : /*3 cycles*/ {
-                loadRegister(readAddrZeroPage(cycles), X);
+                loadRegister(readAddrZeroPage(), X);
             } break;
             case INS_LDY_ZP : /*3 cycles*/ {
-                loadRegister(readAddrZeroPage(cycles), Y);
+                loadRegister(readAddrZeroPage(), Y);
             } break;
             case INS_LDA_ZPX : /*4 cycles*/ {
-                loadRegister(readAddrZeroPageX(cycles), A);
+                loadRegister(readAddrZeroPageX(), A);
             } break;
             case INS_LDY_ZPX : /*4 cycles*/ {
-                loadRegister(readAddrZeroPageX(cycles), Y);
+                loadRegister(readAddrZeroPageX(), Y);
             } break;
             case INS_LDX_ZPY : {
-                loadRegister(readAddrZeroPageY(cycles), X);
+                loadRegister(readAddrZeroPageY(), X);
             } break;
             case INS_LDA_ABS : {
-                loadRegister(readAddrAbsolute(cycles), A);
+                loadRegister(readAddrAbsolute(), A);
             } break;
             case INS_LDX_ABS : {
-                loadRegister(readAddrAbsolute(cycles), X);
+                loadRegister(readAddrAbsolute(), X);
             } break;
             case INS_LDY_ABS : {
-                loadRegister(readAddrAbsolute(cycles), Y);
+                loadRegister(readAddrAbsolute(), Y);
             } break;
             case INS_LDA_ABSX : {
-                loadRegister(readAddrAbsoluteX(cycles), A);
+                loadRegister(readAddrAbsoluteX(), A);
             } break;
             case INS_LDY_ABSX : {
-                loadRegister(readAddrAbsoluteX(cycles), Y);
+                loadRegister(readAddrAbsoluteX(), Y);
             } break;
             case INS_LDA_ABSY : {
-                loadRegister(readAddrAbsoluteY(cycles), A);
+                loadRegister(readAddrAbsoluteY(), A);
             } break;
             case INS_LDX_ABSY : {
-                loadRegister(readAddrAbsoluteY(cycles), X);
+                loadRegister(readAddrAbsoluteY(), X);
             } break;
             case INS_LDA_XIND : {
-                loadRegister(readAddrXIndirect(cycles), A);
+                loadRegister(readAddrXIndirect(), A);
             } break;
             case INS_LDA_INDY : {
-                loadRegister(readAddrIndirectY(cycles), A);
+                loadRegister(readAddrIndirectY(), A);
             } break;
             case INS_STA_ZP : {
-                writeByte(A, writeAddrZeroPage(cycles), cycles);
+                writeByte(A, writeAddrZeroPage());
             } break;
             case INS_STX_ZP : {
-                writeByte(X, writeAddrZeroPage(cycles), cycles);
+                writeByte(X, writeAddrZeroPage());
             } break;
             case INS_STY_ZP : {
-                writeByte(Y, writeAddrZeroPage(cycles), cycles);
+                writeByte(Y, writeAddrZeroPage());
             } break;
             case INS_STA_ZPX : {
-                writeByte(A, writeAddrZeroPageX(cycles), cycles);
+                writeByte(A, writeAddrZeroPageX());
             } break;
             case INS_STX_ZPY : {
-                writeByte(X, writeAddrZeroPageY(cycles), cycles);
+                writeByte(X, writeAddrZeroPageY());
             } break;
             case INS_STY_ZPX : {
-                writeByte(Y, writeAddrZeroPageX(cycles), cycles);
+                writeByte(Y, writeAddrZeroPageX());
             } break;
             case INS_STA_ABS : {
-                writeByte(A, writeAddrAbsolute(cycles), cycles);
+                writeByte(A, writeAddrAbsolute());
             } break;
             case INS_STX_ABS : {
-                writeByte(X, writeAddrAbsolute(cycles), cycles);
+                writeByte(X, writeAddrAbsolute());
             } break;
             case INS_STY_ABS : {
-                writeByte(Y, writeAddrAbsolute(cycles), cycles);
+                writeByte(Y, writeAddrAbsolute());
             } break;
             case INS_STA_ABSX : {
-                writeByte(A, writeAddrAbsoluteX(cycles), cycles);
+                writeByte(A, writeAddrAbsoluteX());
             } break;
             case INS_STA_ABSY : {
-                writeByte(A, writeAddrAbsoluteY(cycles), cycles);
+                writeByte(A, writeAddrAbsoluteY());
             } break;
             case INS_STA_XIND: {
-                writeByte(A, writeAddrXIndirect(cycles), cycles);
+                writeByte(A, writeAddrXIndirect());
             } break;
             case INS_STA_INDY : {
-                writeByte(A, writeAddrIndirectY(cycles), cycles);
+                writeByte(A, writeAddrIndirectY());
             } break;
             case INS_JSR: /*6 cycles*/ {
-                byte subAddrLow = fetchByte(cycles);
-                --cycles;   //internal operation
-                pushWordToStack(PC, cycles);
-                PC = (fetchByte(cycles) << 8) | subAddrLow;
+                byte subAddrLow = fetchByte();
+                ++cycles;   //internal operation
+                pushWordToStack(PC);
+                PC = (fetchByte() << 8) | subAddrLow;
             } break;
             case INS_RTS : {
-                readByte(PC, cycles);
-                byte PCL = pullByteFromStack(cycles, true, true);
-                byte PCH = pullByteFromStack(cycles);
+                readByte(PC);
+                byte PCL = pullByteFromStack(true, true);
+                byte PCH = pullByteFromStack();
                 PC = (PCH << 8) | PCL;
                 PC++;
-                --cycles;
+                ++cycles;
+            } break;
+            case INS_JMP_ABS : {
+                PC = fetchWord();
+            } break;
+            case INS_JMP_IND : {
+                word pointer{fetchWord()};
+                byte latch{readByte(pointer)};
+                PC = (readByte((pointer & 0x00FF) == 0xFF ? (pointer & 0xFF00) : pointer + 1) << 8) | latch;
             } break;
             default: {
                 std::cerr << "Error: instruction " << instruction << "not handled" << std::endl;
@@ -129,29 +135,28 @@ dword CPU::execute(dword unsignedCycles, dword instructionsToExecute) {
         }
     }
     INSTRUCTION_NOT_HANDLED:
-    return cyclesPassedIn - cycles.getCycles();
+    return cycles.getCycles();
 }
 
-
-void CPU::reset(word address) {
-    PC = address;
+void CPU::reset() {
+    PC = mem[0xFFFC] | (mem[0xFFFD] << 8);
     SP = 0xFF;
     PS.reset();
     A = X = Y = 0;
 }
 
-byte CPU::readByte(word address, Cycles &cycles) {
-    CyclesDecrementer cd(cycles);
+byte CPU::readByte(word address) {
+    CyclesIncrementer cd(cycles);
     return mem[address];
 }
 
-word CPU::readWord(word address, Cycles &cycles) {
-    word data = readByte(address, cycles);
-    return data | (readByte(address + 1, cycles) << 8);
+word CPU::readWord(word address) {
+    word data = readByte(address);
+    return data | (readByte(address + 1) << 8);
 }
 
-byte CPU::fetchByte(Cycles &cycles) {
-    CyclesDecrementer cd(cycles);
+byte CPU::fetchByte() {
+    CyclesIncrementer cd(cycles);
     return mem[PC++];
 }
 
@@ -162,23 +167,23 @@ byte CPU::fetchByte(Cycles &cycles) {
     * as a word so it will be 0034. Then it reads the next byte from
     * memory which is 12 shifts it to the left by 8 bits = 1200 and
     * then does 0034 | 1200 = 1234 which is what we wanted.*/
-word CPU::fetchWord(Cycles &cycles) {
-    word data = fetchByte(cycles);
-    return data | (fetchByte(cycles) << 8);
+word CPU::fetchWord() {
+    word data = fetchByte();
+    return data | (fetchByte() << 8);
 }
 
 /*
      * 0x1234 will be stored as 34 12 so write LSB bytes at low address
      * and MSB bytes at high address.
      */
-void CPU::writeWord(word data, word address, Cycles &cycles) {
-    writeByte(data & 0xFF, address, cycles);
-    writeByte(data >> 8, address + 1, cycles);
+void CPU::writeWord(word data, word address) {
+    writeByte(data & 0xFF, address);
+    writeByte(data >> 8, address + 1);
 }
 
-void CPU::writeByte(byte data, word address, Cycles &cycles) {
+void CPU::writeByte(byte data, word address) {
     mem[address] = data;
-    --cycles;
+    ++cycles;
 }
 
 void CPU::loadRegisterSetStatus(byte Register) {
@@ -186,22 +191,22 @@ void CPU::loadRegisterSetStatus(byte Register) {
     PS.set(StatusFlags::N , (Register & 0b10000000) > 0);
 }
 
-void CPU::pushByteToStack(byte data, Cycles &cycles) {
-    writeByte(data, SPToAddress(), cycles);
+void CPU::pushByteToStack(byte data) {
+    writeByte(data, SPToAddress());
     SP--;
 }
 
-void CPU::pushWordToStack(word data, Cycles &cycles) {
-    pushByteToStack((data & 0xFF00) >> 8, cycles);
-    pushByteToStack(data, cycles);
+void CPU::pushWordToStack(word data) {
+    pushByteToStack((data & 0xFF00) >> 8);
+    pushByteToStack(data);
 }
 
-byte CPU::pullByteFromStack(Cycles &cycles, bool incSPBefore, bool incSPAfter) {
+byte CPU::pullByteFromStack(bool incSPBefore, bool incSPAfter) {
     if(incSPBefore) {
         SP++;
-        --cycles;
+        ++cycles;
     }
-    return readByte(SPToAddress(incSPAfter), cycles);
+    return readByte(SPToAddress(incSPAfter));
 }
 
 //return the SP as a full 16 bit address in the first page even though SP is a byte
@@ -209,102 +214,100 @@ word CPU::SPToAddress(bool incrementSP) {
     return incrementSP ? 0x100 | SP++ : 0x100 | SP;
 }
 
-byte CPU::readAddrZeroPage(Cycles &cycles) {
-    byte address{fetchByte(cycles)};
-    return readByte(address, cycles);
+byte CPU::readAddrZeroPage() {
+    byte address{fetchByte()};
+    return readByte(address);
 }
 
-byte CPU::writeAddrZeroPage(Cycles &cycles) {
-    return fetchByte(cycles);
+byte CPU::writeAddrZeroPage() {
+    return fetchByte();
 }
 
-byte CPU::readAddrZeroPageX(Cycles &cycles) {
-    byte address{fetchByte(cycles)};
+byte CPU::readAddrZeroPageX() {
+    byte address{fetchByte()};
     byte effectiveAddress = address + X;
-    return readByte(effectiveAddress, --cycles);
+    ++cycles;
+    return readByte(effectiveAddress);
 }
 
-byte CPU::writeAddrZeroPageX(Cycles &cycles) {
-    return fetchByte(--cycles) + X;
+byte CPU::writeAddrZeroPageX() {
+    ++cycles;
+    return fetchByte() + X;
 }
 
-byte CPU::readAddrZeroPageY(Cycles &cycles) {
-    byte address{fetchByte(cycles)};
+byte CPU::readAddrZeroPageY() {
+    byte address{fetchByte()};
     byte effectiveAddress = address + Y;
-    return readByte(effectiveAddress, --cycles);
+    ++cycles;
+    return readByte(effectiveAddress);
 }
 
-byte CPU::writeAddrZeroPageY(Cycles &cycles) {
-    return fetchByte(--cycles) + Y;
+byte CPU::writeAddrZeroPageY() {
+    ++cycles;
+    return fetchByte() + Y;
 }
 
-byte CPU::readAddrAbsolute(Cycles &cycles) {
-    word address{fetchWord(cycles)};
-    return readByte(address, cycles);
+byte CPU::readAddrAbsolute() {
+    word address{fetchWord()};
+    return readByte(address);
 }
 
-word CPU::writeAddrAbsolute(Cycles &cycles) {
-    return fetchWord(cycles);
+word CPU::writeAddrAbsolute() {
+    return fetchWord();
 }
 
-byte CPU::readAddrAbsoluteX(Cycles &cycles) {
-    word address = fetchWord(cycles);
+byte CPU::readAddrAbsoluteX() {
+    word address = fetchWord();
     dword effectiveAddress = address + X;
-    byte data{readByte(effectiveAddress, cycles)};
-    return (((address & 0xFF) + X) > 0xFF) ? readByte(effectiveAddress - 0x100, cycles) : data;
+    byte data{readByte(effectiveAddress)};
+    return (((address & 0xFF) + X) > 0xFF) ? readByte(effectiveAddress - 0x100) : data;
 }
 
-word CPU::writeAddrAbsoluteX(Cycles &cycles) {
-    word address = fetchWord(cycles);
+word CPU::writeAddrAbsoluteX() {
+    word address = fetchWord();
     dword effectiveAddress = address + X;
-    --cycles;
+    ++cycles;
     return (((address & 0xFF) + X) > 0xFF) ? effectiveAddress - 0x100 : effectiveAddress;
 }
 
-byte CPU::readAddrAbsoluteY(Cycles &cycles) {
-    word address = fetchWord(cycles);
+byte CPU::readAddrAbsoluteY() {
+    word address = fetchWord();
     dword effectiveAddress = address + Y;
-    byte data{readByte(effectiveAddress, cycles)};
-    return (((address & 0xFF) + Y) > 0xFF) ? readByte(effectiveAddress - 0x100, cycles) : data;
+    byte data{readByte(effectiveAddress)};
+    return (((address & 0xFF) + Y) > 0xFF) ? readByte(effectiveAddress - 0x100) : data;
 }
 
-word CPU::writeAddrAbsoluteY(Cycles &cycles) {
-    word address = fetchWord(cycles);
+word CPU::writeAddrAbsoluteY() {
+    word address = fetchWord();
     dword effectiveAddress = address + Y;
-    --cycles;
+    ++cycles;
     return (((address & 0xFF) + Y) > 0xFF) ? effectiveAddress - 0x100 : effectiveAddress;
 }
 
-byte CPU::readAddrXIndirect(Cycles &cycles) {
-    byte startAddress = (fetchByte(cycles) + X) & 0xFF;
-    word effectiveAddress = readByte(startAddress, --cycles) | (readByte((startAddress + 0x01) & 0xFF, cycles)) << 8;
-    return readByte(effectiveAddress, cycles);
+byte CPU::readAddrXIndirect() {
+    byte startAddress = (fetchByte() + X) & 0xFF;
+    ++cycles;
+    word effectiveAddress = readByte(startAddress) | (readByte((startAddress + 0x01) & 0xFF)) << 8;
+    return readByte(effectiveAddress);
 }
 
-word CPU::writeAddrXIndirect(Cycles &cycles) {
-    byte startAddress = (fetchByte(cycles) + X) & 0xFF;
-    return readByte(startAddress, --cycles) | (readByte((startAddress + 0x01) & 0xFF, cycles)) << 8;
+word CPU::writeAddrXIndirect() {
+    byte startAddress = (fetchByte() + X) & 0xFF;
+    ++cycles;
+    return readByte(startAddress) | (readByte((startAddress + 0x01) & 0xFF)) << 8;
 }
 
-byte CPU::readAddrIndirectY(Cycles &cycles) {
-    byte zpAddress = fetchByte(cycles);
-    word address = readWord(zpAddress, cycles);
-    cycles -= (((address & 0xFF) + Y) > 0xFF);
+byte CPU::readAddrIndirectY() {
+    byte zpAddress = fetchByte();
+    word address = readWord(zpAddress);
+    cycles += (((address & 0xFF) + Y) > 0xFF);
     word effectiveAddress = address + Y;
-    return readByte(effectiveAddress, cycles);
+    return readByte(effectiveAddress);
 }
 
-word CPU::writeAddrIndirectY(Cycles &cycles) {
-    byte zpAddress = fetchByte(cycles);
-    word address = readWord(zpAddress, cycles);
-    --cycles;
+word CPU::writeAddrIndirectY() {
+    byte zpAddress = fetchByte();
+    word address = readWord(zpAddress);
+    ++cycles;
     return address + Y;
-}
-
-dword CPU::getTCSFrequency() {
-    int eax{};
-    __asm__("mov $0x16, %eax\n\t");
-    __asm__("cpuid\n\t");
-    __asm__("mov %%eax, %0\n\t":"=r" (eax));
-    return eax;
 }
