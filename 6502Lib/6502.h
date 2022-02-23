@@ -50,7 +50,7 @@ struct m6502::CPU {
 
     struct Cycles {
         explicit Cycles(double Mhz = 1) : cycles{0} {
-            cycleDuration = getTCSFrequency() / Mhz;
+            setCycleDuration(Mhz);
         };
         static dword getTCSFrequency() {
             int eax{};
@@ -78,6 +78,9 @@ struct m6502::CPU {
             startTimePoint = __builtin_ia32_rdtsc();
         }
         sdword getCycles() const {return cycles;}
+        void setCycleDuration(double Mhz) {
+            cycleDuration = (getTCSFrequency() - (30 * Mhz)) / Mhz;
+        }
     private:
         sdword cycles;
         uint64_t startTimePoint;
@@ -116,8 +119,9 @@ struct m6502::CPU {
     INS_TAX_IMP = 0xAA,
     INS_TAY_IMP = 0xA8;
 
-    explicit CPU() {
+    explicit CPU(double Mhz = 1) {
         reset();
+        cycles.setCycleDuration(Mhz);
     };
     void reset();
     word readWord(word address);

@@ -1,9 +1,7 @@
 #include "6502.h"
 
-using namespace m6502;
-
 //return the number of cycles that were used
-dword CPU::execute(uint64_t instructionsToExecute) {
+m6502::dword m6502::CPU::execute(uint64_t instructionsToExecute) {
     cycles.reset();
 
     auto loadRegister = [this](byte value, byte& Register) {
@@ -162,24 +160,24 @@ dword CPU::execute(uint64_t instructionsToExecute) {
     return cycles.getCycles();
 }
 
-void CPU::reset() {
+void m6502::CPU::reset() {
     PC = mem[0xFFFC] | (mem[0xFFFD] << 8);
     SP = 0xFF;
     PS.reset();
     A = X = Y = 0;
 }
 
-byte CPU::readByte(word address) {
+m6502::byte m6502::CPU::readByte(word address) {
     CyclesIncrementer cd(cycles);
     return mem[address];
 }
 
-word CPU::readWord(word address) {
+m6502::word m6502::CPU::readWord(word address) {
     word data = readByte(address);
     return data | (readByte(address + 1) << 8);
 }
 
-byte CPU::fetchByte() {
+m6502::byte m6502::CPU::fetchByte() {
     CyclesIncrementer cd(cycles);
     return mem[PC++];
 }
@@ -191,7 +189,7 @@ byte CPU::fetchByte() {
     * as a word so it will be 0034. Then it reads the next byte from
     * memory which is 12 shifts it to the left by 8 bits = 1200 and
     * then does 0034 | 1200 = 1234 which is what we wanted.*/
-word CPU::fetchWord() {
+m6502::word m6502::CPU::fetchWord() {
     word data = fetchByte();
     return data | (fetchByte() << 8);
 }
@@ -200,32 +198,32 @@ word CPU::fetchWord() {
      * 0x1234 will be stored as 34 12 so write LSB bytes at low address
      * and MSB bytes at high address.
      */
-void CPU::writeWord(word data, word address) {
+void m6502::CPU::writeWord(word data, word address) {
     writeByte(data & 0xFF, address);
     writeByte(data >> 8, address + 1);
 }
 
-void CPU::writeByte(byte data, word address) {
+void m6502::CPU::writeByte(byte data, word address) {
     mem[address] = data;
     ++cycles;
 }
 
-void CPU::loadRegisterSetStatus(byte Register) {
+void m6502::CPU::loadRegisterSetStatus(byte Register) {
     PS.set(StatusFlags::Z, Register == 0);
     PS.set(StatusFlags::N , (Register & 0b10000000) > 0);
 }
 
-void CPU::pushByteToStack(byte data) {
+void m6502::CPU::pushByteToStack(byte data) {
     writeByte(data, SPToAddress());
     SP--;
 }
 
-void CPU::pushWordToStack(word data) {
+void m6502::CPU::pushWordToStack(word data) {
     pushByteToStack((data & 0xFF00) >> 8);
     pushByteToStack(data);
 }
 
-byte CPU::pullByteFromStack(bool incSPBefore, bool incSPAfter) {
+m6502::byte m6502::CPU::pullByteFromStack(bool incSPBefore, bool incSPAfter) {
     if(incSPBefore) {
         SP++;
         ++cycles;
@@ -234,94 +232,94 @@ byte CPU::pullByteFromStack(bool incSPBefore, bool incSPAfter) {
 }
 
 //return the SP as a full 16 bit address in the first page even though SP is a byte
-word CPU::SPToAddress(bool incrementSP) {
+m6502::word m6502::CPU::SPToAddress(bool incrementSP) {
     return incrementSP ? 0x100 | SP++ : 0x100 | SP;
 }
 
-byte CPU::readAddrZeroPage() {
+m6502::byte m6502::CPU::readAddrZeroPage() {
     byte address{fetchByte()};
     return readByte(address);
 }
 
-byte CPU::writeAddrZeroPage() {
+m6502::byte m6502::CPU::writeAddrZeroPage() {
     return fetchByte();
 }
 
-byte CPU::readAddrZeroPageX() {
+m6502::byte m6502::CPU::readAddrZeroPageX() {
     byte address{fetchByte()};
     byte effectiveAddress = address + X;
     ++cycles;
     return readByte(effectiveAddress);
 }
 
-byte CPU::writeAddrZeroPageX() {
+m6502::byte m6502::CPU::writeAddrZeroPageX() {
     ++cycles;
     return fetchByte() + X;
 }
 
-byte CPU::readAddrZeroPageY() {
+m6502::byte m6502::CPU::readAddrZeroPageY() {
     byte address{fetchByte()};
     byte effectiveAddress = address + Y;
     ++cycles;
     return readByte(effectiveAddress);
 }
 
-byte CPU::writeAddrZeroPageY() {
+m6502::byte m6502::CPU::writeAddrZeroPageY() {
     ++cycles;
     return fetchByte() + Y;
 }
 
-byte CPU::readAddrAbsolute() {
+m6502::byte m6502::CPU::readAddrAbsolute() {
     word address{fetchWord()};
     return readByte(address);
 }
 
-word CPU::writeAddrAbsolute() {
+m6502::word m6502::CPU::writeAddrAbsolute() {
     return fetchWord();
 }
 
-byte CPU::readAddrAbsoluteX() {
+m6502::byte m6502::CPU::readAddrAbsoluteX() {
     word address = fetchWord();
     dword effectiveAddress = address + X;
     byte data{readByte(effectiveAddress)};
     return (((address & 0xFF) + X) > 0xFF) ? readByte(effectiveAddress - 0x100) : data;
 }
 
-word CPU::writeAddrAbsoluteX() {
+m6502::word m6502::CPU::writeAddrAbsoluteX() {
     word address = fetchWord();
     dword effectiveAddress = address + X;
     ++cycles;
     return (((address & 0xFF) + X) > 0xFF) ? effectiveAddress - 0x100 : effectiveAddress;
 }
 
-byte CPU::readAddrAbsoluteY() {
+m6502::byte m6502::CPU::readAddrAbsoluteY() {
     word address = fetchWord();
     dword effectiveAddress = address + Y;
     byte data{readByte(effectiveAddress)};
     return (((address & 0xFF) + Y) > 0xFF) ? readByte(effectiveAddress - 0x100) : data;
 }
 
-word CPU::writeAddrAbsoluteY() {
+m6502::word m6502::CPU::writeAddrAbsoluteY() {
     word address = fetchWord();
     dword effectiveAddress = address + Y;
     ++cycles;
     return (((address & 0xFF) + Y) > 0xFF) ? effectiveAddress - 0x100 : effectiveAddress;
 }
 
-byte CPU::readAddrXIndirect() {
+m6502::byte m6502::CPU::readAddrXIndirect() {
     byte startAddress = (fetchByte() + X) & 0xFF;
     ++cycles;
     word effectiveAddress = readByte(startAddress) | (readByte((startAddress + 0x01) & 0xFF)) << 8;
     return readByte(effectiveAddress);
 }
 
-word CPU::writeAddrXIndirect() {
+m6502::word m6502::CPU::writeAddrXIndirect() {
     byte startAddress = (fetchByte() + X) & 0xFF;
     ++cycles;
     return readByte(startAddress) | (readByte((startAddress + 0x01) & 0xFF)) << 8;
 }
 
-byte CPU::readAddrIndirectY() {
+m6502::byte m6502::CPU::readAddrIndirectY() {
     byte zpAddress = fetchByte();
     word address = readWord(zpAddress);
     cycles += (((address & 0xFF) + Y) > 0xFF);
@@ -329,7 +327,7 @@ byte CPU::readAddrIndirectY() {
     return readByte(effectiveAddress);
 }
 
-word CPU::writeAddrIndirectY() {
+m6502::word m6502::CPU::writeAddrIndirectY() {
     byte zpAddress = fetchByte();
     word address = readWord(zpAddress);
     ++cycles;

@@ -6,16 +6,16 @@ using namespace m6502;
 class _6502LoadRegisterBenchmarks : public benchmark::Fixture {
 public:
     const static benchmark::TimeUnit TimeUnit = benchmark::TimeUnit::kMicrosecond;
-    CPU cpu{};
+    CPU cpu{1};
     _6502LoadRegisterBenchmarks() {/* Iterations(3);*/}
     void SetUp(const ::benchmark::State& state) { cpu.PC = 0xFFFC; }
     void TearDown(const ::benchmark::State& state) {}
 
-    byte BenchmarkLoadRegisterImmediate(byte, byte CPU::*);
-    byte BenchmarkLoadRegisterZeroPage(byte, byte CPU::*);
+    byte BenchmarkLoadRegisterImmediate(byte, byte m6502::CPU::*);
+    byte BenchmarkLoadRegisterZeroPage(byte, byte m6502::CPU::*);
 };
 
-byte _6502LoadRegisterBenchmarks::BenchmarkLoadRegisterImmediate(byte opcode, byte CPU::* Register) {
+byte _6502LoadRegisterBenchmarks::BenchmarkLoadRegisterImmediate(byte opcode, byte m6502::CPU::* Register) {
     cpu.mem[0xFFFC] = opcode;
     cpu.mem[0xFFFD] = 0x42;
     cpu.execute();
@@ -23,7 +23,7 @@ byte _6502LoadRegisterBenchmarks::BenchmarkLoadRegisterImmediate(byte opcode, by
     return cpu.*Register;
 }
 
-byte _6502LoadRegisterBenchmarks::BenchmarkLoadRegisterZeroPage(byte opcode, byte CPU::* Register) {
+byte _6502LoadRegisterBenchmarks::BenchmarkLoadRegisterZeroPage(byte opcode, byte m6502::CPU::* Register) {
     cpu.mem[0xFFFC] = opcode;
     cpu.mem[0xFFFD] = 0x42;
     cpu.mem[0x0042] = 0x37;
@@ -34,32 +34,32 @@ byte _6502LoadRegisterBenchmarks::BenchmarkLoadRegisterZeroPage(byte opcode, byt
 
 BENCHMARK_DEFINE_F(_6502LoadRegisterBenchmarks, LDAImmediate)(benchmark::State& st) {
     for(auto _ : st)
-        benchmark::DoNotOptimize(BenchmarkLoadRegisterImmediate(CPU::INS_LDA_IM, &CPU::A));
+        benchmark::DoNotOptimize(BenchmarkLoadRegisterImmediate(m6502::CPU::INS_LDA_IM, &m6502::CPU::A));
 }
 
 BENCHMARK_DEFINE_F(_6502LoadRegisterBenchmarks, LDXImmediate)(benchmark::State& st) {
     for(auto _ : st)
-        benchmark::DoNotOptimize(BenchmarkLoadRegisterImmediate(CPU::INS_LDX_IM, &CPU::X));
+        benchmark::DoNotOptimize(BenchmarkLoadRegisterImmediate(m6502::CPU::INS_LDX_IM, &m6502::CPU::X));
 }
 
 BENCHMARK_DEFINE_F(_6502LoadRegisterBenchmarks, LDYImmediate)(benchmark::State& st) {
     for(auto _ : st)
-        benchmark::DoNotOptimize(BenchmarkLoadRegisterImmediate(CPU::INS_LDY_IM, &CPU::Y));
+        benchmark::DoNotOptimize(BenchmarkLoadRegisterImmediate(m6502::CPU::INS_LDY_IM, &m6502::CPU::Y));
 }
 
 BENCHMARK_DEFINE_F(_6502LoadRegisterBenchmarks, LDAZeroPage)(benchmark::State& st) {
     for(auto _ : st)
-        benchmark::DoNotOptimize(BenchmarkLoadRegisterZeroPage(CPU::INS_LDA_ZP, &CPU::A));
+        benchmark::DoNotOptimize(BenchmarkLoadRegisterZeroPage(m6502::CPU::INS_LDA_ZP, &m6502::CPU::A));
 }
 
 BENCHMARK_DEFINE_F(_6502LoadRegisterBenchmarks, LDXZeroPage)(benchmark::State& st) {
     for(auto _ : st)
-        benchmark::DoNotOptimize(BenchmarkLoadRegisterZeroPage(CPU::INS_LDX_ZP, &CPU::X));
+        benchmark::DoNotOptimize(BenchmarkLoadRegisterZeroPage(m6502::CPU::INS_LDX_ZP, &m6502::CPU::X));
 }
 
 BENCHMARK_DEFINE_F(_6502LoadRegisterBenchmarks, LDYZeroPage)(benchmark::State& st) {
     for(auto _ : st)
-        benchmark::DoNotOptimize(BenchmarkLoadRegisterZeroPage(CPU::INS_LDY_ZP, &CPU::Y));
+        benchmark::DoNotOptimize(BenchmarkLoadRegisterZeroPage(m6502::CPU::INS_LDY_ZP, &m6502::CPU::Y));
 }
 
 BENCHMARK_REGISTER_F(_6502LoadRegisterBenchmarks, LDAImmediate)->Unit(_6502LoadRegisterBenchmarks::TimeUnit)->UseRealTime();
