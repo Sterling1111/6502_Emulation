@@ -176,6 +176,12 @@ m6502::dword m6502::CPU::execute(uint64_t instructionsToExecute) {
             case INS_ORA_INDY : {
                 loadRegister(readAddrIndirectY() | A, A);
             } break;
+            case INS_BIT_ZP : {
+                bitInstructionSetStatus(readAddrZeroPage() & A);
+            } break;
+            case INS_BIT_ABS : {
+                bitInstructionSetStatus(readAddrAbsolute() & A);
+            } break;
             case INS_JSR: /*6 cycles*/ {
                 byte subAddrLow = fetchByte();
                 ++cycles;   //internal operation
@@ -223,7 +229,6 @@ m6502::dword m6502::CPU::execute(uint64_t instructionsToExecute) {
                 fetchByte();
             } break;
             default: {
-                //std::cerr << "Error: instruction " << instruction << "not handled" << std::endl;
                 goto INSTRUCTION_NOT_HANDLED;
             }
         }
@@ -282,7 +287,13 @@ void m6502::CPU::writeByte(byte data, word address) {
 
 void m6502::CPU::loadRegisterSetStatus(byte Register) {
     PS.set(StatusFlags::Z, Register == 0);
-    PS.set(StatusFlags::N , (Register & 0b10000000) > 0);
+    PS.set(StatusFlags::N , (Register & 0b10000000) >> 7);
+}
+
+void m6502::CPU::bitInstructionSetStatus(byte result) {
+    PS.set(StatusFlags::Z, result == 0);
+    PS.set(StatusFlags::N , (result & 0b10000000) >> 7);
+    PS.set(StatusFlags::V, (result & 0x40) >> 6);
 }
 
 void m6502::CPU::pushByteToStack(byte data) {

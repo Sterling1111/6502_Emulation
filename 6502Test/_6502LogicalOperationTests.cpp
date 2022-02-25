@@ -4,7 +4,7 @@
 
 class _6502LogicalOperationTests : public testing::Test {
 public:
-    m6502::CPU cpu{.0001};
+    m6502::CPU cpu{.01};
     virtual void SetUp() { setCPUState(); }
     virtual void TearDown() {}
 
@@ -32,6 +32,7 @@ public:
     static void invokeTestFixtureCasesAND(m6502::byte, const std::function<void(m6502::byte, m6502::byte, m6502::byte, const std::function<m6502::byte(m6502::byte, m6502::byte)>&)>&);
     static void invokeTestFixtureCasesEOR(m6502::byte, const std::function<void(m6502::byte, m6502::byte, m6502::byte, const std::function<m6502::byte(m6502::byte, m6502::byte)>&)>&);
     static void invokeTestFixtureCasesORA(m6502::byte, const std::function<void(m6502::byte, m6502::byte, m6502::byte, const std::function<m6502::byte(m6502::byte, m6502::byte)>&)>&);
+    static void invokeTestFixtureCasesBIT(m6502::byte, const std::function<void(m6502::byte, m6502::byte, m6502::byte)>&);
 };
 
 static void VerifyUnmodifiedCPUFlagsFromLogicalOperation(const std::bitset<m6502::CPU::StatusFlags::numFlags>& ps, const std::bitset<m6502::CPU::StatusFlags::numFlags>& psCopy) {
@@ -42,9 +43,16 @@ static void VerifyUnmodifiedCPUFlagsFromLogicalOperation(const std::bitset<m6502
     EXPECT_EQ(ps.test(m6502::CPU::StatusFlags::V), psCopy.test(m6502::CPU::StatusFlags::V));
 }
 
+static void VerifyUnmodifiedCPUFlagsFromBitOperation(const std::bitset<m6502::CPU::StatusFlags::numFlags>& ps, const std::bitset<m6502::CPU::StatusFlags::numFlags>& psCopy) {
+    EXPECT_EQ(ps.test(m6502::CPU::StatusFlags::C), psCopy.test(m6502::CPU::StatusFlags::C));
+    EXPECT_EQ(ps.test(m6502::CPU::StatusFlags::I), psCopy.test(m6502::CPU::StatusFlags::I));
+    EXPECT_EQ(ps.test(m6502::CPU::StatusFlags::D), psCopy.test(m6502::CPU::StatusFlags::D));
+    EXPECT_EQ(ps.test(m6502::CPU::StatusFlags::B), psCopy.test(m6502::CPU::StatusFlags::B));
+}
+
 void _6502LogicalOperationTests::TestLogicalOperationImmediate(m6502::byte opcode, m6502::byte valueA, m6502::byte value, const std::function<m6502::byte(m6502::byte, m6502::byte)>& op) {
-    cpu.PS.set(m6502::CPU::StatusFlags::Z, op(value, cpu.A));
-    cpu.PS.set(m6502::CPU::StatusFlags::N, !(op(value, cpu.A) & 0x80));
+    cpu.PS.set(m6502::CPU::StatusFlags::Z, op(value, valueA));
+    cpu.PS.set(m6502::CPU::StatusFlags::N, !(op(value, valueA) & 0x80));
     cpu.A = valueA;
     cpu.mem[0xFFFC] = opcode;
     cpu.mem[0xFFFD] = value;
@@ -61,8 +69,8 @@ void _6502LogicalOperationTests::TestLogicalOperationImmediate(m6502::byte opcod
 }
 
 void _6502LogicalOperationTests::TestLogicalOperationZeroPage(m6502::byte opcode, m6502::byte valueA, m6502::byte value, const std::function<m6502::byte(m6502::byte, m6502::byte)>& op) {
-    cpu.PS.set(m6502::CPU::StatusFlags::Z, op(value, cpu.A));
-    cpu.PS.set(m6502::CPU::StatusFlags::N, !(op(value, cpu.A) & 0x80));
+    cpu.PS.set(m6502::CPU::StatusFlags::Z, op(value, valueA));
+    cpu.PS.set(m6502::CPU::StatusFlags::N, !(op(value, valueA) & 0x80));
     cpu.A = valueA;
     cpu.mem[0xFFFC] = opcode;
     cpu.mem[0xFFFD] = 0x42;
@@ -80,8 +88,8 @@ void _6502LogicalOperationTests::TestLogicalOperationZeroPage(m6502::byte opcode
 }
 
 void _6502LogicalOperationTests::TestLogicalOperationZeroPageX(m6502::byte opcode, m6502::byte valueA, m6502::byte value, const std::function<m6502::byte(m6502::byte, m6502::byte)>& op) {
-    cpu.PS.set(m6502::CPU::StatusFlags::Z, op(value, cpu.A));
-    cpu.PS.set(m6502::CPU::StatusFlags::N, !(op(value, cpu.A) & 0x80));
+    cpu.PS.set(m6502::CPU::StatusFlags::Z, op(value, valueA));
+    cpu.PS.set(m6502::CPU::StatusFlags::N, !(op(value, valueA) & 0x80));
     cpu.A = valueA;
     cpu.X = 5;
     cpu.mem[0xFFFC] = opcode;
@@ -101,8 +109,8 @@ void _6502LogicalOperationTests::TestLogicalOperationZeroPageX(m6502::byte opcod
 }
 
 void _6502LogicalOperationTests::TestLogicalOperationZeroPageXWhenItRaps(m6502::byte opcode, m6502::byte valueA, m6502::byte value, const std::function<m6502::byte(m6502::byte, m6502::byte)>& op) {
-    cpu.PS.set(m6502::CPU::StatusFlags::Z, op(value, cpu.A));
-    cpu.PS.set(m6502::CPU::StatusFlags::N, !(op(value, cpu.A) & 0x80));
+    cpu.PS.set(m6502::CPU::StatusFlags::Z, op(value, valueA));
+    cpu.PS.set(m6502::CPU::StatusFlags::N, !(op(value, valueA) & 0x80));
     cpu.A = valueA;
     cpu.X = 0xFF;
     cpu.mem[0xFFFC] = opcode;
@@ -122,8 +130,8 @@ void _6502LogicalOperationTests::TestLogicalOperationZeroPageXWhenItRaps(m6502::
 }
 
 void _6502LogicalOperationTests::TestLogicalOperationAbsolute(m6502::byte opcode, m6502::byte valueA, m6502::byte value, const std::function<m6502::byte(m6502::byte, m6502::byte)>& op) {
-    cpu.PS.set(m6502::CPU::StatusFlags::Z, op(value, cpu.A));
-    cpu.PS.set(m6502::CPU::StatusFlags::N, !(op(value, cpu.A) & 0x80));
+    cpu.PS.set(m6502::CPU::StatusFlags::Z, op(value, valueA));
+    cpu.PS.set(m6502::CPU::StatusFlags::N, !(op(value, valueA) & 0x80));
     cpu.A = valueA;
     cpu.mem[0xFFFC] = opcode;
     cpu.mem[0xFFFD] = 0x80;
@@ -143,8 +151,8 @@ void _6502LogicalOperationTests::TestLogicalOperationAbsolute(m6502::byte opcode
 }
 
 void _6502LogicalOperationTests::TestLogicalOperationAbsoluteX(m6502::byte opcode, m6502::byte valueA, m6502::byte value, const std::function<m6502::byte(m6502::byte, m6502::byte)>& op) {
-    cpu.PS.set(m6502::CPU::StatusFlags::Z, op(value, cpu.A));
-    cpu.PS.set(m6502::CPU::StatusFlags::N, !(op(value, cpu.A) & 0x80));
+    cpu.PS.set(m6502::CPU::StatusFlags::Z, op(value, valueA));
+    cpu.PS.set(m6502::CPU::StatusFlags::N, !(op(value, valueA) & 0x80));
     cpu.A = valueA;
     cpu.X = 1;
     cpu.mem[0xFFFC] = opcode;
@@ -165,8 +173,8 @@ void _6502LogicalOperationTests::TestLogicalOperationAbsoluteX(m6502::byte opcod
 }
 
 void _6502LogicalOperationTests::TestLogicalOperationAbsoluteXWhenPageBounderyCrossed(m6502::byte opcode, m6502::byte valueA, m6502::byte value, const std::function<m6502::byte(m6502::byte, m6502::byte)>& op) {
-    cpu.PS.set(m6502::CPU::StatusFlags::Z, op(value, cpu.A));
-    cpu.PS.set(m6502::CPU::StatusFlags::N, !(op(value, cpu.A) & 0x80));
+    cpu.PS.set(m6502::CPU::StatusFlags::Z, op(value, valueA));
+    cpu.PS.set(m6502::CPU::StatusFlags::N, !(op(value, valueA) & 0x80));
     cpu.A = valueA;
     cpu.X = 0xFF;
     cpu.mem[0xFFFC] = opcode;
@@ -187,8 +195,8 @@ void _6502LogicalOperationTests::TestLogicalOperationAbsoluteXWhenPageBounderyCr
 }
 
 void _6502LogicalOperationTests::TestLogicalOperationAbsoluteY(m6502::byte opcode, m6502::byte valueA, m6502::byte value, const std::function<m6502::byte(m6502::byte, m6502::byte)>& op) {
-    cpu.PS.set(m6502::CPU::StatusFlags::Z, op(value, cpu.A));
-    cpu.PS.set(m6502::CPU::StatusFlags::N, !(op(value, cpu.A) & 0x80));
+    cpu.PS.set(m6502::CPU::StatusFlags::Z, op(value, valueA));
+    cpu.PS.set(m6502::CPU::StatusFlags::N, !(op(value, valueA) & 0x80));
     cpu.A = valueA;
     cpu.Y = 1;
     cpu.mem[0xFFFC] = opcode;
@@ -209,8 +217,8 @@ void _6502LogicalOperationTests::TestLogicalOperationAbsoluteY(m6502::byte opcod
 }
 
 void _6502LogicalOperationTests::TestLogicalOperationAbsoluteYWhenPageBounderyCrossed(m6502::byte opcode, m6502::byte valueA, m6502::byte value, const std::function<m6502::byte(m6502::byte, m6502::byte)>& op) {
-    cpu.PS.set(m6502::CPU::StatusFlags::Z, op(value, cpu.A));
-    cpu.PS.set(m6502::CPU::StatusFlags::N, !(op(value, cpu.A) & 0x80));
+    cpu.PS.set(m6502::CPU::StatusFlags::Z, op(value, valueA));
+    cpu.PS.set(m6502::CPU::StatusFlags::N, !(op(value, valueA) & 0x80));
     cpu.A = valueA;
     cpu.Y = 0xFF;
     cpu.mem[0xFFFC] = opcode;
@@ -231,8 +239,8 @@ void _6502LogicalOperationTests::TestLogicalOperationAbsoluteYWhenPageBounderyCr
 }
 
 void _6502LogicalOperationTests::TestLogicalOperationIndirectY(m6502::byte opcode, m6502::byte valueA, m6502::byte value, const std::function<m6502::byte(m6502::byte, m6502::byte)>& op) {
-    cpu.PS.set(m6502::CPU::StatusFlags::Z, op(value, cpu.A));
-    cpu.PS.set(m6502::CPU::StatusFlags::N, !(op(value, cpu.A) & 0x80));
+    cpu.PS.set(m6502::CPU::StatusFlags::Z, op(value, valueA));
+    cpu.PS.set(m6502::CPU::StatusFlags::N, !(op(value, valueA) & 0x80));
     cpu.A = valueA;
     cpu.Y = 0x04;
     cpu.mem[0xFFFC] = opcode;
@@ -254,8 +262,8 @@ void _6502LogicalOperationTests::TestLogicalOperationIndirectY(m6502::byte opcod
 }
 
 void _6502LogicalOperationTests::TestLogicalOperationIndirectYWhenPageBounderyCrossed(m6502::byte opcode, m6502::byte valueA, m6502::byte value, const std::function<m6502::byte(m6502::byte, m6502::byte)>& op) {
-    cpu.PS.set(m6502::CPU::StatusFlags::Z, op(value, cpu.A));
-    cpu.PS.set(m6502::CPU::StatusFlags::N, !(op(value, cpu.A) & 0x80));
+    cpu.PS.set(m6502::CPU::StatusFlags::Z, op(value, valueA));
+    cpu.PS.set(m6502::CPU::StatusFlags::N, !(op(value, valueA) & 0x80));
     cpu.A = valueA;
     cpu.Y = 0xFF;
     cpu.mem[0xFFFC] = opcode;
@@ -277,8 +285,8 @@ void _6502LogicalOperationTests::TestLogicalOperationIndirectYWhenPageBounderyCr
 }
 
 void _6502LogicalOperationTests::TestLogicalOperationXIndirect(m6502::byte opcode, m6502::byte valueA, m6502::byte value, const std::function<m6502::byte(m6502::byte, m6502::byte)>& op) {
-    cpu.PS.set(m6502::CPU::StatusFlags::Z, op(value, cpu.A));
-    cpu.PS.set(m6502::CPU::StatusFlags::N, !(op(value, cpu.A) & 0x80));
+    cpu.PS.set(m6502::CPU::StatusFlags::Z, op(value, valueA));
+    cpu.PS.set(m6502::CPU::StatusFlags::N, !(op(value, valueA) & 0x80));
     cpu.A = valueA;
     cpu.X = 0x04;
     cpu.mem[0xFFFC] = opcode;
@@ -300,8 +308,8 @@ void _6502LogicalOperationTests::TestLogicalOperationXIndirect(m6502::byte opcod
 }
 
 void _6502LogicalOperationTests::TestLogicalOperationXIndirectWhenItRaps(m6502::byte opcode, m6502::byte valueA, m6502::byte value, const std::function<m6502::byte(m6502::byte, m6502::byte)>& op) {
-    cpu.PS.set(m6502::CPU::StatusFlags::Z, op(value, cpu.A));
-    cpu.PS.set(m6502::CPU::StatusFlags::N, !(op(value, cpu.A) & 0x80));
+    cpu.PS.set(m6502::CPU::StatusFlags::Z, op(value, valueA));
+    cpu.PS.set(m6502::CPU::StatusFlags::N, !(op(value, valueA) & 0x80));
     cpu.A = valueA;
     cpu.X = 0xFF;
     cpu.mem[0xFFFC] = opcode;
@@ -322,31 +330,50 @@ void _6502LogicalOperationTests::TestLogicalOperationXIndirectWhenItRaps(m6502::
     setCPUState();
 }
 
-/*
 void _6502LogicalOperationTests::TestBitOperationZeroPage(m6502::byte opcode, m6502::byte valueA, m6502::byte value) {
-    cpu.PS.set(m6502::CPU::StatusFlags::Z, value & cpu.A);
-    cpu.PS.set(m6502::CPU::StatusFlags::N, !(value & cpu.A & 0x80));
-    cpu.PS.set(m6502::CPU::StatusFlags::V, !(value & cpu.A & 0x40));
+    cpu.PS.set(m6502::CPU::StatusFlags::Z, value & valueA);
+    cpu.PS.set(m6502::CPU::StatusFlags::N, !(value & valueA & 0x80));
+    cpu.PS.set(m6502::CPU::StatusFlags::V, !(value & valueA & 0x40));
     cpu.A = valueA;
-    cpu.X = 0xFF;
     cpu.mem[0xFFFC] = opcode;
-    cpu.mem[0xFFFD] = 0x00;
-    cpu.mem[0x00FF] = 0x00;
-    cpu.mem[0x0000] = 0x80;
-    cpu.mem[0x8000] = value;
+    cpu.mem[0xFFFD] = 0x42;
+    cpu.mem[0x0042] = value;
     auto psCopy = cpu.PS;
     auto accumCopy = cpu.A;
-    constexpr m6502::dword EXPECTED_CYCLES = 6;
+    constexpr m6502::dword EXPECTED_CYCLES = 3;
     m6502::dword cyclesUsed = cpu.execute();
 
     EXPECT_EQ(cyclesUsed, EXPECTED_CYCLES);
-    EXPECT_EQ(cpu.A, op(accumCopy, value));
-    EXPECT_EQ(cpu.PS.test(m6502::CPU::StatusFlags::Z), !op(value, accumCopy));
-    EXPECT_EQ(cpu.PS.test(m6502::CPU::StatusFlags::N), (op(value, accumCopy) & 0x80) >> 7);
-    VerifyUnmodifiedCPUFlagsFromLogicalOperation(cpu.PS, psCopy);
+    EXPECT_EQ(cpu.A, accumCopy);
+    EXPECT_EQ(cpu.PS.test(m6502::CPU::StatusFlags::Z), !(value & valueA));
+    EXPECT_EQ(cpu.PS.test(m6502::CPU::StatusFlags::N), (value & valueA & 0x80) >> 7);
+    EXPECT_EQ(cpu.PS.test(m6502::CPU::StatusFlags::V), (value & valueA & 0x40) >> 6);
+    VerifyUnmodifiedCPUFlagsFromBitOperation(cpu.PS, psCopy);
     setCPUState();
 }
-*/
+
+void _6502LogicalOperationTests::TestBitOperationAbsolute(m6502::byte opcode, m6502::byte valueA, m6502::byte value) {
+    cpu.PS.set(m6502::CPU::StatusFlags::Z, value & valueA);
+    cpu.PS.set(m6502::CPU::StatusFlags::N, !(value & valueA & 0x80));
+    cpu.PS.set(m6502::CPU::StatusFlags::V, !(value & valueA & 0x40));
+    cpu.A = valueA;
+    cpu.mem[0xFFFC] = opcode;
+    cpu.mem[0xFFFD] = 0x80;
+    cpu.mem[0xFFFE] = 0x44;
+    cpu.mem[0x4480] = value;
+    auto psCopy = cpu.PS;
+    auto accumCopy = cpu.A;
+    constexpr m6502::dword EXPECTED_CYCLES = 4;
+    m6502::dword cyclesUsed = cpu.execute();
+
+    EXPECT_EQ(cyclesUsed, EXPECTED_CYCLES);
+    EXPECT_EQ(cpu.A, accumCopy);
+    EXPECT_EQ(cpu.PS.test(m6502::CPU::StatusFlags::Z), !(value & valueA));
+    EXPECT_EQ(cpu.PS.test(m6502::CPU::StatusFlags::N), (value & valueA & 0x80) >> 7);
+    EXPECT_EQ(cpu.PS.test(m6502::CPU::StatusFlags::V), (value & valueA & 0x40) >> 6);
+    VerifyUnmodifiedCPUFlagsFromBitOperation(cpu.PS, psCopy);
+    setCPUState();
+}
 
 void _6502LogicalOperationTests::invokeTestFixtureCasesAND(m6502::byte opcode, const std::function<void(m6502::byte, m6502::byte, m6502::byte, const std::function<m6502::byte(m6502::byte, m6502::byte)>&)>& testAND) {
     testAND(opcode, 0b01010101, 0x0F, std::bit_and<>());  //neither 0 nor negative
@@ -364,6 +391,13 @@ void _6502LogicalOperationTests::invokeTestFixtureCasesORA(m6502::byte opcode, c
     testORA(opcode, 0b01010101, 0x0F, std::bit_or<>());     //neither 0 nor negative
     testORA(opcode, 0b00000000, 0x00, std::bit_or<>());     //0
     testORA(opcode, 0b11010101, 0x8F, std::bit_or<>());     //negative
+}
+
+void _6502LogicalOperationTests::invokeTestFixtureCasesBIT(m6502::byte opcode, const std::function<void(m6502::byte, m6502::byte, m6502::byte)> & testBIT) {
+    testBIT(opcode, 0b00010101, 0x7F);  //neither Z nor N nor V will be set
+    testBIT(opcode, 0b00000000, 0x00);  //0
+    testBIT(opcode, 0b10000000, 0x80);  //negative
+    testBIT(opcode, 0b01000000, 0x40);  //V set
 }
 
 TEST_F(_6502LogicalOperationTests, ANDImmediateCanANDAValueIntoARegister) {
@@ -600,10 +634,14 @@ TEST_F(_6502LogicalOperationTests, ORAXIndirectCanORAValueIntoARegisterWhenItRap
     });
 }
 
-//TEST_F(_6502LogicalOperationTests, )
+TEST_F(_6502LogicalOperationTests, BITZeroPageCanBitTestMemoryAgainstARegister) {
+    invokeTestFixtureCasesBIT(m6502::CPU::INS_BIT_ZP, [this](m6502::byte opcode, m6502::byte valueA, m6502::byte value) {
+        TestBitOperationZeroPage(opcode, valueA, value);
+    });
+}
 
-
-
-
-
-
+TEST_F(_6502LogicalOperationTests, BITAbsoluteCanBitTestMemoryAgainstARegister) {
+    invokeTestFixtureCasesBIT(m6502::CPU::INS_BIT_ABS, [this](m6502::byte opcode, m6502::byte valueA, m6502::byte value) {
+        TestBitOperationAbsolute(opcode, valueA, value);
+    });
+}

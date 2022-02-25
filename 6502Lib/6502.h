@@ -125,6 +125,7 @@ struct m6502::CPU {
     void writeWord(word data, word address);
     void writeByte(byte data, word address);
     void loadRegisterSetStatus(byte Register);
+    void bitInstructionSetStatus(byte result);
     dword execute(uint64_t instructionsToExecute = 1);
     //read instructions which return the byte in memory at the address for the given addressing mode
     inline byte readAddrZeroPage();
