@@ -19,7 +19,7 @@ set  (6502_TEST_SOURCES
         "_6502StoreRegisterTests.cpp"
         "_6502JumpsAndCallsTests.cpp"
         "_6502StackOperationTests.cpp"
-        "main.cpp")
+        "main.cpp" _6502LogicalOperationTests.cpp)
 
 add_executable( 6502Test ${6502_TEST_SOURCES} 	)
 add_dependencies( 6502Test 6502Lib )

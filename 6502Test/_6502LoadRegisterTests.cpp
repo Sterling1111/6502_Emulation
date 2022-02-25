@@ -3,8 +3,11 @@
 
 class _6502LoadRegisterTests : public testing::Test {
 public:
-    m6502::CPU cpu;
-    virtual void SetUp() { cpu.PC = 0xFFFC; }
+    m6502::CPU cpu{1};
+    virtual void SetUp() {
+        cpu.reset();
+        cpu.PC = 0xFFFC;
+    }
     virtual void TearDown() {}
 
     void TestLoadRegisterImmediate(m6502::byte, m6502::byte m6502::CPU::*);

@@ -104,6 +104,78 @@ m6502::dword m6502::CPU::execute(uint64_t instructionsToExecute) {
             case INS_STA_INDY : {
                 writeByte(A, writeAddrIndirectY());
             } break;
+            case INS_AND_IM : {
+                loadRegister(fetchByte() & A, A);
+            } break;
+            case INS_EOR_IM : {
+                loadRegister(fetchByte() ^ A, A);
+            } break;
+            case INS_ORA_IM : {
+                loadRegister(fetchByte() | A, A);
+            } break;
+            case INS_AND_ZP : {
+                loadRegister(readAddrZeroPage() & A, A);
+            } break;
+            case INS_EOR_ZP : {
+                loadRegister(readAddrZeroPage() ^ A, A);
+            } break;
+            case INS_ORA_ZP : {
+                loadRegister(readAddrZeroPage() | A, A);
+            } break;
+            case INS_AND_ZPX : {
+                loadRegister(readAddrZeroPageX() & A, A);
+            } break;
+            case INS_EOR_ZPX : {
+                loadRegister(readAddrZeroPageX() ^ A, A);
+            } break;
+            case INS_ORA_ZPX : {
+                loadRegister(readAddrZeroPageX() | A, A);
+            } break;
+            case INS_AND_ABS : {
+
+            } break;
+            case INS_EOR_ABS : {
+
+            } break;
+            case INS_ORA_ABS : {
+
+            } break;
+            case INS_AND_ABSX : {
+
+            } break;
+            case INS_EOR_ABSX : {
+
+            } break;
+            case INS_ORA_ABSX : {
+
+            } break;
+            case INS_AND_ABSY : {
+
+            } break;
+            case INS_EOR_ABSY : {
+
+            } break;
+            case INS_ORA_ABSY : {
+
+            } break;
+            case INS_AND_XIND : {
+
+            } break;
+            case INS_EOR_XIND : {
+
+            } break;
+            case INS_ORA_XIND : {
+
+            } break;
+            case INS_AND_INDY : {
+
+            } break;
+            case INS_EOR_INDY : {
+
+            } break;
+            case INS_ORA_INDY : {
+
+            } break;
             case INS_JSR: /*6 cycles*/ {
                 byte subAddrLow = fetchByte();
                 ++cycles;   //internal operation
@@ -151,7 +223,7 @@ m6502::dword m6502::CPU::execute(uint64_t instructionsToExecute) {
                 fetchByte();
             } break;
             default: {
-                std::cerr << "Error: instruction " << instruction << "not handled" << std::endl;
+                //std::cerr << "Error: instruction " << instruction << "not handled" << std::endl;
                 goto INSTRUCTION_NOT_HANDLED;
             }
         }
