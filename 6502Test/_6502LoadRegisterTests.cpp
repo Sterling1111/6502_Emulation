@@ -3,7 +3,7 @@
 
 class _6502LoadRegisterTests : public testing::Test {
 public:
-    m6502::CPU cpu{1};
+    m6502::CPU cpu{.0001};
     virtual void SetUp() {
         cpu.reset();
         cpu.PC = 0xFFFC;

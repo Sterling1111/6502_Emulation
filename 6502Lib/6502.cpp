@@ -132,49 +132,49 @@ m6502::dword m6502::CPU::execute(uint64_t instructionsToExecute) {
                 loadRegister(readAddrZeroPageX() | A, A);
             } break;
             case INS_AND_ABS : {
-
+                loadRegister(readAddrAbsolute() & A, A);
             } break;
             case INS_EOR_ABS : {
-
+                loadRegister(readAddrAbsolute() ^ A, A);
             } break;
             case INS_ORA_ABS : {
-
+                loadRegister(readAddrAbsolute() | A, A);
             } break;
             case INS_AND_ABSX : {
-
+                loadRegister(readAddrAbsoluteX() & A, A);
             } break;
             case INS_EOR_ABSX : {
-
+                loadRegister(readAddrAbsoluteX() ^ A, A);
             } break;
             case INS_ORA_ABSX : {
-
+                loadRegister(readAddrAbsoluteX() | A, A);
             } break;
             case INS_AND_ABSY : {
-
+                loadRegister(readAddrAbsoluteY() & A, A);
             } break;
             case INS_EOR_ABSY : {
-
+                loadRegister(readAddrAbsoluteY() ^ A, A);
             } break;
             case INS_ORA_ABSY : {
-
+                loadRegister(readAddrAbsoluteY() | A, A);
             } break;
             case INS_AND_XIND : {
-
+                loadRegister(readAddrXIndirect() & A, A);
             } break;
             case INS_EOR_XIND : {
-
+                loadRegister(readAddrXIndirect() ^ A, A);
             } break;
             case INS_ORA_XIND : {
-
+                loadRegister(readAddrXIndirect() | A, A);
             } break;
             case INS_AND_INDY : {
-
+                loadRegister(readAddrIndirectY() & A, A);
             } break;
             case INS_EOR_INDY : {
-
+                loadRegister(readAddrIndirectY() ^ A, A);
             } break;
             case INS_ORA_INDY : {
-
+                loadRegister(readAddrIndirectY() | A, A);
             } break;
             case INS_JSR: /*6 cycles*/ {
                 byte subAddrLow = fetchByte();
