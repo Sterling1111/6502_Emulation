@@ -128,19 +128,19 @@ struct m6502::CPU {
     void bitInstructionSetStatus(byte result);
     dword execute(uint64_t instructionsToExecute = 1);
     //read instructions which return the byte in memory at the address for the given addressing mode
-    inline byte readAddrZeroPage();
-    inline byte readAddrZeroPageX();
-    inline byte readAddrAbsolute();
-    inline byte readAddrAbsoluteX();
-    inline byte readAddrAbsoluteY();
-    inline byte readAddrZeroPageY();
-    inline byte readAddrXIndirect();
-    inline byte readAddrIndirectY();
+    inline word readAddrZeroPage();
+    inline word readAddrZeroPageX();
+    inline word readAddrAbsolute();
+    inline word readAddrAbsoluteX();
+    inline word readAddrAbsoluteY();
+    inline word readAddrZeroPageY();
+    inline word readAddrXIndirect();
+    inline word readAddrIndirectY();
 
     //write instructions which return the address in memory to write to for a given addressing mode.
-    inline byte writeAddrZeroPage();
-    inline byte writeAddrZeroPageX();
-    inline byte writeAddrZeroPageY();
+    inline word writeAddrZeroPage();
+    inline word writeAddrZeroPageX();
+    inline word writeAddrZeroPageY();
     inline word writeAddrAbsolute();
     inline word writeAddrAbsoluteX();
     inline word writeAddrAbsoluteY();

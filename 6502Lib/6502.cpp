@@ -319,40 +319,40 @@ m6502::word m6502::CPU::SPToAddress(bool incrementSP) {
     return incrementSP ? 0x100 | SP++ : 0x100 | SP;
 }
 
-m6502::byte m6502::CPU::readAddrZeroPage() {
+m6502::word m6502::CPU::readAddrZeroPage() {
     byte address{fetchByte()};
     return readByte(address);
 }
 
-m6502::byte m6502::CPU::writeAddrZeroPage() {
+m6502::word m6502::CPU::writeAddrZeroPage() {
     return fetchByte();
 }
 
-m6502::byte m6502::CPU::readAddrZeroPageX() {
+m6502::word m6502::CPU::readAddrZeroPageX() {
     byte address{fetchByte()};
     byte effectiveAddress = address + X;
     ++cycles;
     return readByte(effectiveAddress);
 }
 
-m6502::byte m6502::CPU::writeAddrZeroPageX() {
+m6502::word m6502::CPU::writeAddrZeroPageX() {
     ++cycles;
-    return fetchByte() + X;
+    return static_cast<byte>(fetchByte() + X);
 }
 
-m6502::byte m6502::CPU::readAddrZeroPageY() {
+m6502::word m6502::CPU::readAddrZeroPageY() {
     byte address{fetchByte()};
     byte effectiveAddress = address + Y;
     ++cycles;
     return readByte(effectiveAddress);
 }
 
-m6502::byte m6502::CPU::writeAddrZeroPageY() {
+m6502::word m6502::CPU::writeAddrZeroPageY() {
     ++cycles;
-    return fetchByte() + Y;
+    return static_cast<byte>(fetchByte() + Y);
 }
 
-m6502::byte m6502::CPU::readAddrAbsolute() {
+m6502::word m6502::CPU::readAddrAbsolute() {
     word address{fetchWord()};
     return readByte(address);
 }
@@ -361,7 +361,7 @@ m6502::word m6502::CPU::writeAddrAbsolute() {
     return fetchWord();
 }
 
-m6502::byte m6502::CPU::readAddrAbsoluteX() {
+m6502::word m6502::CPU::readAddrAbsoluteX() {
     word address = fetchWord();
     dword effectiveAddress = address + X;
     byte data{readByte(effectiveAddress)};
@@ -375,7 +375,7 @@ m6502::word m6502::CPU::writeAddrAbsoluteX() {
     return (((address & 0xFF) + X) > 0xFF) ? effectiveAddress - 0x100 : effectiveAddress;
 }
 
-m6502::byte m6502::CPU::readAddrAbsoluteY() {
+m6502::word m6502::CPU::readAddrAbsoluteY() {
     word address = fetchWord();
     dword effectiveAddress = address + Y;
     byte data{readByte(effectiveAddress)};
@@ -389,7 +389,7 @@ m6502::word m6502::CPU::writeAddrAbsoluteY() {
     return (((address & 0xFF) + Y) > 0xFF) ? effectiveAddress - 0x100 : effectiveAddress;
 }
 
-m6502::byte m6502::CPU::readAddrXIndirect() {
+m6502::word m6502::CPU::readAddrXIndirect() {
     byte startAddress = (fetchByte() + X) & 0xFF;
     ++cycles;
     word effectiveAddress = readByte(startAddress) | (readByte((startAddress + 0x01) & 0xFF)) << 8;
@@ -402,7 +402,7 @@ m6502::word m6502::CPU::writeAddrXIndirect() {
     return readByte(startAddress) | (readByte((startAddress + 0x01) & 0xFF)) << 8;
 }
 
-m6502::byte m6502::CPU::readAddrIndirectY() {
+m6502::word m6502::CPU::readAddrIndirectY() {
     byte zpAddress = fetchByte();
     word address = readWord(zpAddress);
     cycles += (((address & 0xFF) + Y) > 0xFF);
